@@ -6,7 +6,7 @@ Build a macOS-only, modular personal-assistance platform for document management
 
 The first release will support local files, iCloud Drive, and Google Drive; document processing; scheduled and event-driven workflows; and configurable LLM providers including Claude. Development will be incremental and test-driven so every slice is useful, testable, and reversible.
 
-The repository is currently an empty Git repository with no source files, dependencies, commits, or application configuration. The plan therefore starts with project scaffolding and contracts before adding integrations.
+The repository is currently an empty Python project with planning and project-skill documentation but no application source, dependencies, or runtime configuration. The plan therefore starts with Python scaffolding and contracts before adding integrations.
 
 ## 2. Product principles
 
@@ -48,23 +48,34 @@ The repository is currently an empty Git repository with no source files, depend
 
 ### 4.1 Core modules
 
+Use Python as the preferred implementation language, with typed protocols and dependency injection:
+
 ```text
-Sources/
-├── AssistantDomain/       # Typed IDs, documents, artifacts, policies, errors
-├── AssistantConfig/       # Versioned config, profiles, validation, migrations
-├── AssistantStorage/      # Local database, secrets references, run history
-├── AssistantDocuments/    # File catalog, extraction, indexing, search
-├── AssistantTools/        # Tool protocol, registry, permissions, adapters
-├── AssistantAgents/       # Agent definitions, planning, execution, guardrails
-├── AssistantWorkflows/    # Workflow schema, validation, execution, approvals
-├── AssistantScheduler/    # Manual, time-based, event-based triggers
-├── AssistantLLM/          # Provider protocol and Claude/other adapters
-├── AssistantConnectors/   # Local FS, iCloud Drive, Google Drive connectors
-├── AssistantCLI/          # Command-line interface
-└── AssistantApp/          # Menu-bar and desktop SwiftUI interface
+src/assistant/
+├── domain/                # Typed models, IDs, artifacts, policies, errors
+├── config/                # Versioned config, profiles, validation, migrations
+├── storage/               # Local database, secret references, run history
+├── documents/             # File catalog, extraction, indexing, search
+├── tools/                 # Tool protocol, registry, permissions, adapters
+├── agents/                # Agent definitions, planning, execution, guardrails
+├── workflows/             # Schema, validation, execution, approvals
+├── scheduler/             # Manual, time-based, event-based triggers
+├── llm/                   # Provider protocol and Claude/other adapters
+├── connectors/            # Local FS, iCloud Drive, Google Drive connectors
+├── interfaces/            # Shared application services and DTOs
+└── cli/                   # Typer or equivalent command-line interface
 ```
 
-The modules should communicate through domain types and protocols, not by importing UI implementations or provider-specific types into the core. A module may be extracted into a separate Swift package later without changing workflow semantics.
+The modules should communicate through Python protocols/interfaces and domain models, not by importing UI implementations or provider-specific types into the core. Keep the core framework-neutral so a future macOS UI can call the same application services as the CLI and automation processes.
+
+Recommended Python baseline:
+
+- Python 3.12+ with `pyproject.toml` and a `src/` layout.
+- `pytest` for TDD, `pytest-asyncio` where asynchronous behavior is needed, and coverage thresholds in CI.
+- `ruff` for linting/formatting and `mypy` or an equivalent strict type checker.
+- `pydantic` or standard dataclasses for validated contracts and configuration.
+- `typer` for the CLI; keep macOS menu-bar/desktop integration behind interface adapters so it does not leak into core modules.
+- Async-capable boundaries for LLM, Google Drive, filesystem events, and scheduler operations, with synchronous wrappers only where useful.
 
 ### 4.2 Agents
 
@@ -185,7 +196,7 @@ Every phase follows this loop: write a failing test or contract fixture, impleme
 
 **Implementation**
 
-- Swift package/app/CLI scaffolding.
+- Python package/app/CLI scaffolding with `pyproject.toml` and a `src/` layout.
 - Module boundaries and dependency rules.
 - CI running formatting, build, unit tests, and contract tests.
 - Versioned config loader, migration mechanism, Keychain reference abstraction, and structured logging.
@@ -287,7 +298,7 @@ Every phase follows this loop: write a failing test or contract fixture, impleme
 
 **Implementation**
 
-- SwiftUI menu-bar and desktop interfaces.
+- Python application-service interfaces plus a macOS UI adapter selected after the core vertical slices are stable.
 - Finder Services, AppleScript/Shortcuts, and notification integration.
 - Shared interface-to-service adapters with no duplicated workflow logic.
 
@@ -321,30 +332,26 @@ Every phase follows this loop: write a failing test or contract fixture, impleme
 ai-assistance/
 ├── PLAN.md
 ├── README.md
-├── Package.swift
-├── Sources/
-│   ├── AssistantDomain/
-│   ├── AssistantConfig/
-│   ├── AssistantStorage/
-│   ├── AssistantDocuments/
-│   ├── AssistantTools/
-│   ├── AssistantAgents/
-│   ├── AssistantWorkflows/
-│   ├── AssistantScheduler/
-│   ├── AssistantLLM/
-│   ├── AssistantConnectors/
-│   ├── AssistantCLI/
-│   └── AssistantApp/
+├── pyproject.toml
+├── src/
+│   └── assistant/
+│       ├── domain/
+│       ├── config/
+│       ├── storage/
+│       ├── documents/
+│       ├── tools/
+│       ├── agents/
+│       ├── workflows/
+│       ├── scheduler/
+│       ├── llm/
+│       ├── connectors/
+│       ├── interfaces/
+│       └── cli/
 ├── Tests/
-│   ├── ContractTests/
-│   ├── AssistantDomainTests/
-│   ├── AssistantDocumentsTests/
-│   ├── AssistantAgentsTests/
-│   ├── AssistantWorkflowsTests/
-│   ├── AssistantSchedulerTests/
-│   ├── AssistantLLMTests/
-│   ├── AssistantConnectorTests/
-│   └── AssistantCLITests/
+│   ├── contract/
+│   ├── unit/
+│   ├── integration/
+│   └── e2e/
 ├── Fixtures/
 │   ├── Documents/
 │   ├── Workflows/
@@ -353,7 +360,7 @@ ai-assistance/
 ├── config/
 │   ├── default/
 │   └── examples/
-├── Documentation/
+├── docs/
 ├── .github/
 │   ├── skills/
 │   │   └── commit-message-writer/
@@ -389,7 +396,7 @@ A user can configure a provider such as Claude and a Google Drive connection, se
 ## 11. Decisions to record before implementation
 
 - Minimum supported macOS version and Apple Silicon/Intel support.
-- Swift package versus Xcode project details required for app entitlements and integrations.
+- Python packaging and macOS UI strategy, including whether a later native wrapper is needed for app entitlements and integrations.
 - Initial Claude API model, authentication, retention settings, and provider fallback policy.
 - Google Drive OAuth scopes, selected folders, cache policy, and conflict behavior.
 - Configuration format (YAML/JSON/plist) and migration/versioning policy.
