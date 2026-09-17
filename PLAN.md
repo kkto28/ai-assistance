@@ -1,406 +1,243 @@
-# Modular Mac Assistance Project Plan
+# Clawbot — Development Plan
 
-## 1. Project outcome
+A TDD, incrementally-shipped build plan for the scaffold. Each phase
+produces a working, tested slice of the system — never a half-built
+mess. Pair this with `CHANGES.md` (template included below) to track
+what actually happened vs. what was planned.
 
-Build a macOS-only, modular personal-assistance platform for document management and workflow automation. The system must be extensible rather than a single application with hard-coded features: agents, schedulers, tools, interfaces, configuration, storage, and LLM providers should be replaceable modules connected through typed contracts.
+## Principles
 
-The first release will support local files, iCloud Drive, and Google Drive; document processing; scheduled and event-driven workflows; and configurable LLM providers including Claude. Development will be incremental and test-driven so every slice is useful, testable, and reversible.
+- **Red → Green → Refactor.** Write a failing test for the smallest
+  next behavior, make it pass with the simplest code, then clean up.
+- **Vertical slices, not layers.** Each phase should leave you with
+  something runnable end-to-end, not "all models done, no logic yet."
+- **One skill/channel per PR.** Keep diffs small enough to review and
+  revert independently — this is the whole point of the modular
+  scaffold.
+- **No dangerous tool ships without a test that it refuses unapproved
+  execution.** Safety behavior is tested, not assumed.
 
-The repository is currently an empty Python project with planning and project-skill documentation but no application source, dependencies, or runtime configuration. The plan therefore starts with Python scaffolding and contracts before adding integrations.
+## Tooling
 
-## 2. Product principles
-
-- **Modular:** each capability is a module with a narrow interface and explicit dependencies.
-- **Provider-neutral:** LLMs, storage providers, schedulers, and UI surfaces can be changed without rewriting workflow logic.
-- **Incremental:** deliver vertical slices that work end-to-end before expanding breadth.
-- **Test-driven:** write failing tests for behavior and contracts before implementation; preserve fixtures and regression tests.
-- **Safe by default:** preview changes, preserve originals, require approval for destructive actions, and make retries idempotent.
-- **Configurable:** use versioned configuration for providers, schedules, permissions, tools, agents, and policies; avoid secrets in repository files.
-- **Observable:** every workflow and agent run has structured status, logs, diagnostics, costs/usage where available, and recoverable failure state.
-- **Offline-capable:** local indexing, search, deterministic tools, and previously configured workflows work without cloud access where possible.
-
-## 3. First-release goals
-
-### Must have
-
-1. Index and search user-approved local folders and iCloud Drive locations incrementally.
-2. Connect to Google Drive with OAuth, scoped access, incremental change detection, and explicit sync/caching rules.
-3. Process Markdown/plain text, Office documents, and PDFs with explicit unsupported/degraded states.
-4. Run document operations such as summarize, transform, extract, classify, suggest names/tags, and export.
-5. Use configurable LLM providers, including Claude, through a common provider interface.
-6. Run reusable workflows manually, from Finder/Shortcuts, from the CLI, and on a schedule.
-7. Coordinate specialized agents that use approved tools to complete bounded workflow tasks.
-8. Provide a menu-bar/desktop interface and a CLI over the same application services.
-9. Store configuration, workflow definitions, credentials references, run history, and audit events safely and locally.
-10. Use TDD, contract tests, integration fixtures, and CI from the first implementation slice.
-
-### Explicitly not in the first release
-
-- Email and calendar automation.
-- Broad SaaS integrations beyond Google Drive.
-- Unbounded autonomous agents or agents that can invent and install tools.
-- Cross-platform support.
-- Multi-user accounts or a hosted orchestration backend.
-- Destructive file operations without preview and approval.
-- Full-fidelity Office/PDF round-trip editing unless required by a validated use case.
-
-## 4. Modular architecture
-
-### 4.1 Core modules
-
-Use Python as the preferred implementation language, with typed protocols and dependency injection:
-
-```text
-src/assistant/
-├── domain/                # Typed models, IDs, artifacts, policies, errors
-├── config/                # Versioned config, profiles, validation, migrations
-├── storage/               # Local database, secret references, run history
-├── documents/             # File catalog, extraction, indexing, search
-├── tools/                 # Tool protocol, registry, permissions, adapters
-├── agents/                # Agent definitions, planning, execution, guardrails
-├── workflows/             # Schema, validation, execution, approvals
-├── scheduler/             # Manual, time-based, event-based triggers
-├── llm/                   # Provider protocol and Claude/other adapters
-├── connectors/            # Local FS, iCloud Drive, Google Drive connectors
-├── interfaces/            # Shared application services and DTOs
-└── cli/                   # Typer or equivalent command-line interface
+```bash
+pip install pytest pytest-mock pytest-cov
 ```
 
-The modules should communicate through Python protocols/interfaces and domain models, not by importing UI implementations or provider-specific types into the core. Keep the core framework-neutral so a future macOS UI can call the same application services as the CLI and automation processes.
-
-Recommended Python baseline:
-
-- Python 3.12+ with `pyproject.toml` and a `src/` layout.
-- `pytest` for TDD, `pytest-asyncio` where asynchronous behavior is needed, and coverage thresholds in CI.
-- `ruff` for linting/formatting and `mypy` or an equivalent strict type checker.
-- `pydantic` or standard dataclasses for validated contracts and configuration.
-- `typer` for the CLI; keep macOS menu-bar/desktop integration behind interface adapters so it does not leak into core modules.
-- Async-capable boundaries for LLM, Google Drive, filesystem events, and scheduler operations, with synchronous wrappers only where useful.
-
-### 4.2 Agents
-
-Agents are bounded workers, not unrestricted autonomous processes. Each agent has:
-
-- A versioned identifier and declared capabilities.
-- A typed input and output contract.
-- An allow-list of tools and data sources.
-- A resource/time/token budget.
-- A policy for approval, retries, and failure escalation.
-- Structured event output and an auditable run record.
-
-Initial agents:
-
-- **Indexer agent:** discovers and updates file/document metadata.
-- **Document agent:** extracts, summarizes, transforms, or classifies selected content.
-- **Organizer agent:** proposes names, tags, folders, and safe file actions.
-- **Workflow agent:** coordinates steps and delegates to tools or other approved agents.
-- **Sync agent:** reconciles Google Drive and local/iCloud metadata without overwriting unexpectedly.
-
-Agents should use deterministic tools for file operations and parsing. LLM reasoning may select or sequence tools, but it must not bypass tool permissions or approval checkpoints.
-
-### 4.3 Tools
-
-Define a versioned tool protocol with:
-
-- Tool name/version, JSON-like input schema, output schema, and error schema.
-- Declared side effects and required permissions.
-- Dry-run/preview support where applicable.
-- Timeout, cancellation, retry, and idempotency behavior.
-- Redacted structured logging.
-
-Initial tool groups:
-
-- File read/write/move/copy and metadata tools.
-- Document extraction, conversion, and search tools.
-- Local/iCloud Drive connector tools.
-- Google Drive list/read/upload/update tools with scoped OAuth.
-- LLM completion/structured-output tools.
-- Notification, approval, and run-history tools.
-
-Tool registration must be explicit in configuration or code. Unknown tools are unavailable by default.
-
-### 4.4 LLM providers
-
-Create a provider-neutral interface for text completion, structured extraction, embeddings if later required, streaming, cancellation, token/usage reporting, and provider errors.
-
-Initial provider strategy:
-
-- Implement a mock provider first for deterministic tests.
-- Add a Claude adapter behind the provider interface.
-- Keep room for additional providers without coupling prompts or workflow definitions to one vendor.
-- Store model/provider settings in profiles; store API keys only in macOS Keychain or an equivalent secret store.
-- Attach a data-transfer policy to every request: allowed sources, redaction rules, maximum content, retention notice, and user approval requirement.
-
-Prompt templates, output schemas, and model selection belong to versioned configuration or workflow steps rather than scattered implementation constants.
-
-### 4.5 Schedulers and triggers
-
-The scheduler is a replaceable service that emits typed workflow triggers:
-
-- Manual invocation.
-- Calendar/time schedules using macOS scheduling facilities.
-- Folder/file change events.
-- Google Drive change notifications or polling where event delivery is unavailable.
-- Finder/Shortcuts/CLI invocation.
-
-Schedules must include timezone, enabled state, concurrency policy, missed-run behavior, retry policy, and last-run status. The scheduler submits a workflow run; it does not contain business logic.
-
-### 4.6 Interfaces
-
-All interfaces call application services, never private implementation details:
-
-- Menu-bar status and quick actions.
-- Desktop search, document actions, workflow editor/runner, approvals, and history.
-- CLI commands for config validation, indexing, search, workflow execution, scheduling, runs, and diagnostics.
-- Finder Services and AppleScript/Shortcuts actions.
-- Future interfaces can be added without changing agents or tools.
-
-## 5. Configuration and data model
-
-Use versioned, validated configuration with separate profiles for development and production:
-
-```text
-config/
-├── default/
-│   ├── providers.yaml
-│   ├── tools.yaml
-│   ├── agents.yaml
-│   ├── workflows/
-│   └── schedules.yaml
-└── examples/
+Suggested layout — tests mirror source:
+```
+tests/
+  test_skills_registry.py
+  test_skill_shell.py
+  test_skill_file.py
+  test_skill_memory.py
+  test_agent_loop.py
+  test_memory_db.py
 ```
 
-Configuration should define enabled providers, model profiles, connector scopes, tool permissions, agent budgets, workflow policies, schedules, logging, and data-retention settings. Secrets are references to Keychain entries, never literal values.
+Run with `pytest -v --cov=clawbot` before every commit.
 
-Persist locally:
+---
 
-- File/document catalog and extraction status.
-- Connector cursors and sync metadata.
-- Workflow definitions and versions.
-- Agent/tool/workflow run history and audit events.
-- User preferences and migration version.
+## Phase 0 — Project skeleton (done)
 
-Do not persist raw cloud prompts or document content in logs unless the user explicitly enables diagnostic capture.
+- [x] Folder structure, config, requirements
+- [x] Skill registry with `@tool` decorator
+- [x] Shell, file, memory skills
+- [x] SQLite memory layer
+- [x] Agent reasoning loop
+- [x] CLI + Telegram channel stubs
+- [x] Manual smoke test (registry loads, file/memory skills work)
 
-## 6. Incremental TDD delivery plan
+**Next up:** backfill this phase with real tests before adding anything
+new, so the baseline is covered.
 
-Every phase follows this loop: write a failing test or contract fixture, implement the smallest behavior, run focused tests, integrate one vertical slice, then document and refactor. Each phase must leave the project buildable.
+---
 
-### Phase 0 — Bootstrap and contracts
+## Phase 1 — Test the skill registry (TDD)
 
-**Tests first**
+**Goal:** `skills/__init__.py`'s registry is the foundation everything
+else calls — get it airtight first.
 
-- Project health command and empty configuration validation.
-- Domain serialization/error contract tests.
-- Tool and provider protocol contract tests using fakes.
+1. Write `tests/test_skills_registry.py`:
+   - registering a tool makes it retrievable by name
+   - `to_schema()` produces correct `required` list from function signature
+   - `schemas()` returns one schema per registered tool
+   - `load()` imports a module and its tools appear in the registry
+2. Run — confirm failures (red).
+3. Registry code already exists; adjust only if tests reveal a gap
+   (e.g. default-value params should be optional in the schema — check
+   this, it's a likely bug).
+4. Refactor: extract schema-building into a testable pure function if
+   it isn't already.
 
-**Implementation**
+**Definition of done:** `pytest tests/test_skills_registry.py` green,
+no changes needed to any skill file.
 
-- Python package/app/CLI scaffolding with `pyproject.toml` and a `src/` layout.
-- Module boundaries and dependency rules.
-- CI running formatting, build, unit tests, and contract tests.
-- Versioned config loader, migration mechanism, Keychain reference abstraction, and structured logging.
+---
 
-**Exit criteria**
+## Phase 2 — Test each skill in isolation
 
-- Clean checkout builds and tests.
-- A fake LLM, fake connector, fake tool, and fake scheduler can be injected.
-- No production test needs a live cloud service.
+**Goal:** every skill is testable without hitting the LLM or a real
+shell/filesystem where avoidable.
 
-### Phase 1 — Local documents vertical slice
+1. `test_skill_file.py`:
+   - write then read round-trips correctly
+   - path traversal (`../../etc/passwd`) raises/returns an error, never
+     escapes `WORKSPACE`
+   - `list_files` on empty dir returns `"(empty)"`
+   - use `tmp_path` fixture to isolate from the real workspace
+2. `test_skill_shell.py`:
+   - mock `subprocess.run`; assert command is passed through correctly
+   - timeout path returns the expected error string, doesn't raise
+   - stderr gets appended to output when present
+3. `test_skill_memory.py`:
+   - `remember` + `recall` round-trip
+   - `recall` on missing key returns the "nothing remembered" message
+   - use an in-memory/tmp SQLite DB, never the real `clawbot.db`
 
-**Tests first**
+**Definition of done:** all three files green, no test touches a real
+file outside `tmp_path` or a real shell command.
 
-- Folder permission and bookmark behavior.
-- Incremental indexing with unchanged/changed/deleted/unavailable files.
-- Extraction fixtures for Markdown, Office, PDF, malformed, encrypted, and scanned inputs.
-- Search ranking and status behavior.
+---
 
-**Implementation**
+## Phase 3 — Test the agent loop with a mocked LLM client
 
-- Local connector, document catalog, extractors, index, and search tools.
-- Indexer agent using only approved deterministic tools.
-- CLI commands for index, search, inspect, and diagnostics.
+**Goal:** verify the tool-calling loop's control flow without spending
+API calls or depending on model behavior.
 
-**Exit criteria**
+1. `test_agent_loop.py`:
+   - mock `Agent._client.messages.create` to return: (a) a text-only
+     response → loop returns it immediately, (b) a tool-call response
+     followed by a text response → loop calls the tool and returns the
+     second response
+   - dangerous tool + `auto_approve=False` + `approve_fn` returns
+     `False` → tool is *not* executed, agent reports decline
+   - dangerous tool + `auto_approve=True` → tool runs without calling
+     `approve_fn`
+   - loop hits `max_turns` → returns the "stopped after max turns"
+     message rather than looping forever
+2. This phase will likely surface the first real bug: confirm
+   `approve_fn` is actually being bypassed correctly when
+   `auto_approve=True` (current code checks `config.auto_approve`
+   inside `_execute_tool` — trace it under test to be sure).
 
-- A selected folder can be indexed and searched end-to-end offline.
-- Re-indexing avoids unchanged work and never modifies originals.
+**Definition of done:** agent loop behavior is pinned by tests; you can
+now refactor toward LangGraph later without fear, since these tests
+define the contract.
 
-### Phase 2 — LLM and document-operation vertical slice
+---
 
-**Tests first**
+## Phase 4 — First real end-to-end skill (incremental slice)
 
-- Provider contract tests with mock responses, timeouts, cancellation, malformed structured output, and usage data.
-- Claude adapter tests using recorded/sanitized fixtures or a test endpoint, never required for ordinary CI.
-- Data-transfer policy tests proving disallowed content is blocked.
-- Document operation tests for safe output and failure recovery.
+Pick **one** new capability (e.g. a `weather_skill.py` calling a public
+API, or a `browser_skill.py` with Playwright) and build it test-first:
 
-**Implementation**
+1. Write the test for the tool function against a mocked HTTP
+   response/browser action.
+2. Implement the skill.
+3. Add it to `enabled_skills` in `config.py`.
+4. Manually run `python main.py cli` and exercise it once for real —
+   TDD covers logic, not "does the actual API key work."
+5. Log the change in `CHANGES.md`.
 
-- Provider-neutral LLM service and Claude adapter.
-- Document agent and operation tools.
-- Prompt/output schema configuration, consent flow, redaction, and usage display.
+Repeat this phase per skill — it's your template for all future
+capabilities.
 
-**Exit criteria**
+---
 
-- A user can summarize a selected document with a mock provider and configured Claude provider.
-- Inputs remain unchanged after success or failure.
+## Phase 5 — Channel hardening
 
-### Phase 3 — Workflow and agent orchestration
+1. Test `telegram_channel.py`'s `on_message` handler with a mocked
+   `Update`/`context`, asserting it calls `agent.handle_message` with
+   the right channel id and sends the reply back.
+2. Replace the current `approve_fn=lambda: True` auto-approve shortcut
+   with a real inline-keyboard approve/deny flow; test the callback
+   handler the same way.
+3. Add `discord_channel.py` following the same tested pattern.
 
-**Tests first**
+---
 
-- Workflow schema validation and version migration.
-- Tool permission enforcement and agent capability boundaries.
-- Artifact passing, retries, cancellation, idempotency, approvals, and recovery.
-- Deterministic workflow fixtures and event/audit assertions.
+## Phase 6 — Scheduler + proactive messaging
 
-**Implementation**
+1. Test `morning_briefing()` calls `agent.handle_message` with expected
+   args (mock the agent).
+2. Wire a real `send_message` call once a channel supports proactive
+   sends (not just reply-to) — extend the channel interface with a
+   `send(channel_id, text)` method, test it, then use it here.
 
-- Workflow engine, agent runner, tool registry, approval service, and run history.
-- Starter workflows: document brief, inbox triage preview, and batch extraction.
-- CLI workflow execution and dry-run output.
+---
 
-**Exit criteria**
+## Phase 7 — Sandbox hardening
 
-- The same workflow runs through CLI and application services.
-- An agent cannot call an unlisted tool or perform an unapproved destructive action.
+1. Test that `run_shell` respects a command allowlist once you add one
+   (currently unrestricted beyond the approval gate).
+2. Test `file_skill`'s jail against more traversal patterns (symlinks,
+   absolute paths, `..%2f` encoded variants if ever exposed over a
+   network boundary).
+3. Consider containerizing tool execution (Docker) for anything beyond
+   personal, trusted use — write the test against the container
+   interface before wiring the real container.
 
-### Phase 4 — Google Drive and scheduling
+---
 
-**Tests first**
+## Ongoing: every change follows this loop
 
-- OAuth scope/configuration validation with mocked authorization.
-- Connector cursor, pagination, rate-limit, conflict, and retry tests.
-- Scheduler timezone, concurrency, missed-run, and trigger-routing tests.
-- Google Drive sync fixtures for new, changed, deleted, and remote-only files.
+1. Add/adjust a test that captures the desired behavior (red).
+2. Write the minimum code to pass it (green).
+3. Refactor for clarity, re-run tests.
+4. Append an entry to `CHANGES.md`.
+5. Commit.
 
-**Implementation**
+---
 
-- Google Drive connector and tools with minimal scopes.
-- Sync agent with explicit cache and conflict policy.
-- Scheduler service with time and file-change triggers.
-- CLI commands for connector status, schedules, runs, and retry.
+## `CHANGES.md` template
 
-**Exit criteria**
+Copy this into `CHANGES.md` at the repo root and add one entry per
+change, newest first. Keep entries short — link to the test file that
+pins the behavior rather than re-explaining it in prose.
 
-- A configured Google Drive folder can be incrementally indexed.
-- A scheduled workflow produces an auditable run and respects concurrency/approval policy.
+```markdown
+# Changes
 
-### Phase 5 — Interfaces and integrations
+## [Unreleased]
 
-**Tests first**
+### Added
+-
 
-- View-model/service tests for onboarding, permissions, approvals, errors, and run history.
-- CLI acceptance tests against fakes.
-- Finder/Shortcuts command contract tests.
+### Changed
+-
 
-**Implementation**
+### Fixed
+-
 
-- Python application-service interfaces plus a macOS UI adapter selected after the core vertical slices are stable.
-- Finder Services, AppleScript/Shortcuts, and notification integration.
-- Shared interface-to-service adapters with no duplicated workflow logic.
+### Tests
+-
 
-**Exit criteria**
+---
 
-- The primary document workflow can be completed without the terminal.
-- CLI, UI, Finder, and Shortcuts all use the same workflow engine.
+## 2026-09-17 — Phase 0: initial scaffold
+### Added
+- Project structure: core/, skills/, channels/, memory/, scheduler/
+- Skill registry with @tool decorator (skills/__init__.py)
+- Shell, file, and memory skills
+- SQLite-backed conversation history + notes (memory/db.py)
+- Agent reasoning loop with tool-calling and approval gate (core/agent.py)
+- CLI and Telegram channel adapters
+- requirements.txt, README.md
 
-### Phase 6 — Hardening and release
-
-**Tests first**
-
-- End-to-end regression suite with local, iCloud-like, and mocked Google Drive fixtures.
-- Security/privacy tests for secret handling, permissions, redaction, and log contents.
-- Performance tests for incremental indexing and bounded concurrent runs.
-
-**Implementation**
-
-- Signed development builds, notarization path, migration/recovery tools, backups, and release docs.
-- User docs for configuration, providers, Google Drive permissions, schedules, workflows, privacy, and troubleshooting.
-
-**Exit criteria**
-
-- Focused and full test suites pass from a clean checkout.
-- A release build contains no credentials or user document content.
-- Every supported failure mode has a visible diagnostic and recovery path.
-
-## 7. Initial project structure
-
-```text
-ai-assistance/
-├── PLAN.md
-├── README.md
-├── pyproject.toml
-├── src/
-│   └── assistant/
-│       ├── domain/
-│       ├── config/
-│       ├── storage/
-│       ├── documents/
-│       ├── tools/
-│       ├── agents/
-│       ├── workflows/
-│       ├── scheduler/
-│       ├── llm/
-│       ├── connectors/
-│       ├── interfaces/
-│       └── cli/
-├── Tests/
-│   ├── contract/
-│   ├── unit/
-│   ├── integration/
-│   └── e2e/
-├── Fixtures/
-│   ├── Documents/
-│   ├── Workflows/
-│   ├── Providers/
-│   └── Connectors/
-├── config/
-│   ├── default/
-│   └── examples/
-├── docs/
-├── .github/
-│   ├── skills/
-│   │   └── commit-message-writer/
-│   │       └── SKILL.md
-│   └── workflows/
+### Tests
+- Manual smoke test only (registry load + file/memory skill round-trip).
+  No automated test suite yet — Phase 1 backfills this.
 ```
 
-## 8. Example workflows
+Each future phase above should produce one `CHANGES.md` entry, e.g.:
 
-1. **Document brief:** select a PDF or Office file, extract content, ask the configured Claude provider for a structured summary, and save a Markdown result beside the original.
-2. **Inbox triage:** on a schedule or folder event, classify new files, propose names/tags/destinations, show a dry-run, then move only approved files.
-3. **Google Drive intake:** detect new Drive files, cache/index them incrementally, create briefs, and write outputs to a configured local or Drive destination.
-4. **Batch extraction:** search matching documents, extract fields into CSV/JSON, write results separately, and record per-file failures.
-5. **Shortcut action:** receive Finder-selected files, run a saved workflow, and return output paths, approvals, and warnings.
-
-## 9. Risks and mitigations
-
-| Risk | Mitigation |
-|---|---|
-| Modular boundaries become abstract without value | Require each module to support a vertical slice and contract tests; avoid premature remote services. |
-| Agent performs unsafe or unexpected actions | Capability/tool allow-lists, budgets, dry runs, approval checkpoints, and audit events. |
-| Claude or another provider changes behavior | Provider protocol, structured output validation, mock tests, versioned prompts, and fallback/error states. |
-| Google Drive OAuth or API limits block workflows | Minimal scopes, token storage in Keychain, cursors, pagination, backoff, rate-limit handling, and connector diagnostics. |
-| Schedules duplicate or lose work | Idempotency keys, concurrency policy, durable run states, missed-run policy, and retry tests. |
-| Cloud AI exposes sensitive content | Per-request transfer policy, redaction, explicit consent, provider settings, and content-free logs. |
-| File-provider delays look like missing files | Distinguish unavailable, deleted, and unsupported states; retry with bounded backoff. |
-| Incremental development creates integration drift | Keep the main branch buildable, merge vertical slices, run contract tests in CI, and maintain migration fixtures. |
-
-## 10. Definition of done for the first release
-
-A user can configure a provider such as Claude and a Google Drive connection, select local/iCloud/Drive sources, search supported documents, run or schedule a reusable workflow, let bounded agents use approved tools, review proposed changes, approve safe outputs, and recover from permission, extraction, provider, synchronization, or scheduling failures without losing originals. The behavior is covered by focused TDD tests, integration fixtures, and end-to-end regression tests.
-
-## 11. Decisions to record before implementation
-
-- Minimum supported macOS version and Apple Silicon/Intel support.
-- Python packaging and macOS UI strategy, including whether a later native wrapper is needed for app entitlements and integrations.
-- Initial Claude API model, authentication, retention settings, and provider fallback policy.
-- Google Drive OAuth scopes, selected folders, cache policy, and conflict behavior.
-- Configuration format (YAML/JSON/plist) and migration/versioning policy.
-- Local persistence technology and backup/recovery strategy.
-- Time scheduler implementation and whether a background launch agent is required.
-- GUI workflow editor in v1 versus templates plus CLI-defined workflows.
-- Personal local distribution versus signed/notarized public distribution.
+```markdown
+## 2026-09-20 — Phase 1: registry tests
+### Tests
+- tests/test_skills_registry.py: schema generation, tool registration,
+  module loading (4 tests, all passing)
+### Fixed
+- to_schema() was marking params with defaults as required; fixed and
+  covered by test_schema_optional_params
+```

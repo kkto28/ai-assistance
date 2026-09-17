@@ -1,0 +1,14 @@
+# Core (required)
+anthropic>=0.40.0
+
+# Optional model backends -- uncomment what you use
+openai>=1.50.0
+# ollama>=0.4.0
+
+# Scheduling
+apscheduler>=3.10.0
+
+# Channels -- uncomment what you use
+python-telegram-bot>=21.0
+# discord.py>=2.4.0
+# slack-bolt>=1.20.0
