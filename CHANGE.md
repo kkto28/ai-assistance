@@ -10,6 +10,8 @@ it in prose.
 ### Added
 - `tests/test_skills_registry.py`: registry registration, schema generation,
   schema enumeration, and module loading coverage
+- `tests/test_skill_file.py`, `tests/test_skill_shell.py`, and
+  `tests/test_skill_memory.py`: isolated skill behavior coverage
 
 ### Changed
 -
@@ -19,6 +21,7 @@ it in prose.
 
 ### Tests
 - Phase 1 registry tests: 4 passing
+- Phase 2 skill tests: 8 passing
 
 ---
 
