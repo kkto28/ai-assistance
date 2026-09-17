@@ -8,7 +8,8 @@ it in prose.
 ## [Unreleased]
 
 ### Added
--
+- `tests/test_skills_registry.py`: registry registration, schema generation,
+  schema enumeration, and module loading coverage
 
 ### Changed
 -
@@ -17,7 +18,7 @@ it in prose.
 -
 
 ### Tests
--
+- Phase 1 registry tests: 4 passing
 
 ---
 
