@@ -5,29 +5,56 @@ source -- scheduling is transport, same as channels/ are transport.
 
 Requires: pip install apscheduler
 """
+import asyncio
+from typing import Optional
+
 from apscheduler.schedulers.background import BackgroundScheduler
 from core.agent import Agent
+from config import config
+from telegram import Bot
 
-agent = Agent()
+agent: Optional[Agent] = None
 scheduler = BackgroundScheduler()
 
 
-def morning_briefing():
-    reply = agent.handle_message(
+def _get_agent() -> Agent:
+    global agent
+    if agent is None:
+        agent = Agent()
+    return agent
+
+
+def send_telegram_message(message: str) -> None:
+    if not config.telegram_token:
+        raise RuntimeError("Set TELEGRAM_BOT_TOKEN to send scheduled Telegram messages.")
+    if not config.telegram_chat_id:
+        raise RuntimeError(
+            "Set TELEGRAM_CHAT_ID to send scheduled Telegram messages."
+        )
+
+    async def send() -> None:
+        async with Bot(token=config.telegram_token) as bot:
+            await bot.send_message(chat_id=config.telegram_chat_id, text=message)
+
+    asyncio.run(send())
+
+
+def morning_briefing() -> str:
+    reply = _get_agent().handle_message(
         channel="scheduled",
-        user_text="Give me a short briefing: anything I should know this morning?",
+        user_text="Just tell me the weather today in Glasgow 2648579",
         approve_fn=lambda name, inp: True,
     )
     print(f"[scheduled] {reply}")
-    # Wire this up to a channel.send(reply) call once you have a channel
-    # that supports proactive (not just reply-to) messages, e.g. Telegram's
-    # bot.send_message(chat_id, reply).
+    if config.telegram_token and config.telegram_chat_id:
+        send_telegram_message(reply)
+    return reply
 
 
 def start():
-    scheduler.add_job(morning_briefing, "cron", hour=8, minute=0)
+    scheduler.add_job(morning_briefing, "cron", hour=00, minute=40)
     scheduler.start()
-    print("Scheduler started. Jobs: morning_briefing @ 08:00")
+    print("Scheduler started. Jobs: morning_briefing @ 00:40")
 
 
 if __name__ == "__main__":

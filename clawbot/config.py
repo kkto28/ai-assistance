@@ -30,6 +30,7 @@ class Config:
 
     # --- Channels ---
     telegram_token: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    telegram_chat_id: str = os.getenv("TELEGRAM_CHAT_ID", "")
     discord_token: str = os.getenv("DISCORD_BOT_TOKEN", "")
 
     # --- Skills ---

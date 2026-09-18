@@ -41,6 +41,43 @@ python main.py cli
 Dangerous tools (`run_shell`, `write_file`) will ask for approval in the
 terminal before running, unless you set `CLAWBOT_AUTO_APPROVE=true`.
 
+## Running scheduled jobs
+
+The scheduler currently runs `morning_briefing` every day at **08:00** in
+the machine's local timezone. Run it from the `clawbot/` directory:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+python -m scheduler.jobs
+```
+
+To send the briefing to Telegram as well as printing it locally, configure
+the bot token and destination chat ID before starting the scheduler:
+
+```bash
+export TELEGRAM_BOT_TOKEN=123456:your-bot-token
+export TELEGRAM_CHAT_ID=123456789
+python -m scheduler.jobs
+```
+
+`TELEGRAM_CHAT_ID` is the chat or group where scheduled messages should be
+delivered. If either Telegram variable is missing, the job remains
+local-only. Keep the process running for APScheduler to trigger the job.
+
+To run the scheduler in the background:
+
+```bash
+./run_job.sh
+```
+
+The launcher writes the process ID to `../scheduler.pid` and output to
+`../scheduler.log`. To stop the background scheduler:
+
+```bash
+kill "$(cat ../scheduler.pid)"
+rm ../scheduler.pid
+```
+
 ## Adding a skill
 
 Create `skills/your_skill.py`:

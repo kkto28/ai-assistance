@@ -5,5 +5,4 @@ venv/
 *.db
 *.log
 *.pid
-*run.sh
 .coverage
