@@ -7,21 +7,35 @@ it in prose.
 
 ## [Unreleased]
 
+### Latest commit
+- `dd16d4f` (`feat(scheduler): send scheduled briefings to Telegram`)
+- `4010669` (`feat(weather): add BBC weather location tools`)
+
 ### Added
 - `tests/test_skills_registry.py`: registry registration, schema generation,
   schema enumeration, and module loading coverage
 - `tests/test_skill_file.py`, `tests/test_skill_shell.py`, and
   `tests/test_skill_memory.py`: isolated skill behavior coverage
+- BBC Weather skill with generic location resolution and weather lookup by
+  numeric location ID (`skills/weather_skill.py`)
+- Telegram delivery for scheduled briefings with configurable chat ID
+- Background launchers: `clawbot/run_cli.sh`, `clawbot/run_job.sh`, and
+  `clawbot/run_telegram.sh`
 
 ### Changed
--
+- Scheduler and launcher documentation in `clawbot/README.md`
+- Launcher scripts now use environment-provided credentials and validate the
+  configured Python environment before starting
 
 ### Fixed
--
+- Scheduler startup now runs as a module with the correct `PYTHONPATH`,
+  avoiding package import failures
 
 ### Tests
 - Phase 1 registry tests: 4 passing
 - Phase 2 skill tests: 8 passing
+- Weather skill and scheduler tests: 35 passing, 2 opt-in live weather tests
+  skipped by default
 
 ---
 
