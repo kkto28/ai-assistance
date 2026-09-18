@@ -38,6 +38,7 @@ class Config:
         "skills.shell_skill",
         "skills.file_skill",
         "skills.memory_skill",
+        "skills.weather_skill",
     ])
 
 
