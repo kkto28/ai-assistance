@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rose · Personal AI</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+      :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#182230;background:#f5f7fb}
+      *{box-sizing:border-box}html,body,#root{height:100%}body{margin:0;min-width:760px;overflow:hidden}button,textarea{font:inherit}
+      #runtime-error{display:none;max-width:700px;margin:80px auto;padding:22px;border:1px solid #f1b8c1;border-radius:14px;background:#fff0f2;color:#8f3041;font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap}
+      .app{display:grid;grid-template-columns:230px minmax(0,1fr);height:100%;padding:14px;gap:12px}
+      .sidebar{background:#182230;border-radius:22px;color:white;padding:21px 18px;display:flex;flex-direction:column;height:100%;min-height:0;position:sticky;top:14px;overflow:hidden}
+      .brand{display:flex;align-items:baseline;gap:10px}.brand strong{font-size:20px;letter-spacing:.08em}.brand span{font-size:9px;color:#909bb0;font-weight:800;letter-spacing:.12em}
+      .profile{background:#252f40;border-radius:16px;padding:10px;margin-top:20px;text-align:center}.profile img{width:100%;height:125px;object-fit:contain;object-position:center;border-radius:11px;display:block;margin:0 auto}.profile h2{font-size:15px;margin:11px 4px 3px;text-align:left}.profile p{font-size:11px;color:#9ba7ba;margin:0 4px 3px;text-align:left}
+      .new-chat{border:0;border-radius:11px;background:#6d5dfc;color:#fff;font-weight:750;padding:13px;margin-top:24px;cursor:pointer}.new-chat:hover{background:#5748e5}
+      .nav{border:0;background:transparent;color:#b4bfd0;text-align:left;padding:13px 4px;font-size:13px;cursor:pointer}.nav:hover{color:#fff}.grow{flex:1}.model{border-top:1px solid #2b3547;padding-top:17px;color:#7f8ba0;font-size:9px;font-weight:800;letter-spacing:.1em}.model b{display:block;color:#fff;font-size:12px;font-weight:500;letter-spacing:0;margin-top:5px}.private{color:#71d7a5;font-size:11px;margin-top:12px}
+      .main{background:#fff;border:1px solid #e7eaf1;border-radius:22px;display:flex;flex-direction:column;min-width:0;height:100%;overflow:hidden}.header{display:flex;align-items:center;justify-content:space-between;padding:22px 26px 16px}.eyebrow{color:#7c8798;font-size:12px}.title{font-size:24px;font-weight:800;margin-top:4px}.ready{background:#e9fbf2;color:#299866;border-radius:20px;font-size:11px;font-weight:750;padding:8px 12px}
+      .content{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:20px;flex:1;min-height:0;padding:0 28px 20px}.messages{overflow:auto;padding:10px 5px 20px}.message{display:flex;margin:9px 0}.message.user{justify-content:flex-end}.bubble{max-width:75%;padding:13px 16px;border-radius:17px;background:#fff;border:1px solid #e7eaf1;line-height:1.5;font-size:14px;white-space:pre-wrap}.user .bubble{background:#6d5dfc;color:#fff;border:0;border-bottom-right-radius:5px}.rose .bubble{border-bottom-left-radius:5px}
+      .dashboard{background:#f7f8fc;border-radius:17px;padding:17px;height:max-content}.dashboard h3{font-size:12px;margin:0 0 17px}.stat{background:#fff;border:1px solid #e7eaf1;border-radius:12px;padding:13px;margin-bottom:10px}.stat small{display:block;color:#7c8798;font-size:10px}.stat strong{display:block;font-size:18px;margin-top:4px}.hint{color:#7c8798;font-size:11px;line-height:1.5;margin-top:18px}
+      .composer{border-top:1px solid #eef0f5;padding:17px 28px 21px;display:flex;gap:10px}.composer textarea{resize:none;flex:1;border:1px solid #e7eaf1;background:#f7f8fc;border-radius:13px;padding:13px 15px;outline:none;min-height:58px;color:#182230}.composer textarea:focus{border-color:#6d5dfc}.send{border:0;border-radius:12px;background:#6d5dfc;color:#fff;padding:0 19px;font-weight:750;cursor:pointer}.send:disabled{opacity:.5;cursor:wait}.tip{color:#9aa4b3;font-size:10px;text-align:center;padding:0 0 10px}.error{color:#b44a5a;background:#fff0f2;border-radius:9px;padding:9px 12px;font-size:12px;margin:10px 5px}
+      @media(max-width:900px){body{min-width:0}.app{grid-template-columns:205px minmax(0,1fr)}.content{grid-template-columns:1fr}.dashboard{display:none}}
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <div id="runtime-error"></div>
+    <script>
+      window.addEventListener("error", function(event) {
+        const box = document.getElementById("runtime-error");
+        if (box) {
+          box.textContent = "Rose UI error:\\n" + (event.error?.message || event.message);
+          box.style.display = "block";
+        }
+      });
+      window.addEventListener("unhandledrejection", function(event) {
+        const box = document.getElementById("runtime-error");
+        if (box) {
+          box.textContent = "Rose UI request error:\\n" + (event.reason?.message || event.reason);
+          box.style.display = "block";
+        }
+      });
+    </script>
+    <script type="text/babel">
+      const {useEffect, useRef, useState} = React;
+      const welcome = {role:"rose", text:"Hi, I’m Rose. I’m here to help you think, create, and get things done. What would you like to work on today?"};
+
+      function App() {
+        const [messages, setMessages] = useState([welcome]);
+        const [draft, setDraft] = useState("");
+        const [busy, setBusy] = useState(false);
+        const [error, setError] = useState("");
+        const [health, setHealth] = useState({model:"connecting…"});
+        const [panel, setPanel] = useState("dashboard");
+        const endRef = useRef(null);
+
+        useEffect(() => {
+          fetch("/api/health").then(r => r.json()).then(setHealth).catch(() => setError("Python backend is not reachable."));
+        }, []);
+        useEffect(() => {
+          if (endRef.current) {
+            endRef.current.scrollIntoView({behavior:"smooth"});
+          }
+        }, [messages]);
+
+        async function waitForReply(jobId) {
+          for (let attempt = 0; attempt < 180; attempt += 1) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+            const response = await fetch("/api/jobs/" + encodeURIComponent(jobId), {cache:"no-store"});
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || "Rose could not be reached.");
+            if (data.status === "complete") return data.reply;
+            if (data.status === "error") throw new Error(data.error || "Rose could not answer.");
+          }
+          throw new Error("Rose took too long to respond. Please try again.");
+        }
+
+        async function send() {
+          const message = draft.trim();
+          if (!message || busy) return;
+          setDraft(""); setError(""); setMessages(items => [...items, {role:"user", text:message}]); setBusy(true);
+          try {
+            const response = await fetch("/api/chat", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({message})});
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || "The agent could not answer.");
+            const reply = await waitForReply(data.job_id);
+            setMessages(items => [...items, {role:"rose", text:reply}]);
+          } catch (err) { setError(err.message); }
+          finally { setBusy(false); }
+        }
+        function keyDown(event) { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); send(); } }
+        function reset(event) { event?.preventDefault(); setMessages([welcome]); setError(""); setPanel("dashboard"); }
+        function showDashboard(event) { event?.preventDefault(); setPanel("dashboard"); setError(""); }
+        function showHistory(event) { event?.preventDefault(); setPanel("history"); setError(""); }
+
+        return <form className="app" onSubmit={event => event.preventDefault()}>
+          <aside className="sidebar">
+            <div className="brand"><strong>ROSE</strong><span>PERSONAL AI</span></div>
+            <div className="profile"><img src="/assets/Rose.png" alt="Rose"/><h2>Rose</h2><p>Your thoughtful digital companion</p></div>
+            <button type="button" className="new-chat" onClick={reset}>＋ New conversation</button>
+            <button type="button" className="nav" onClick={showDashboard}>▦　Dashboard</button>
+            <button type="button" className="nav" onClick={showHistory}>◷　Conversation history</button>
+            <div className="grow"/>
+            <div className="model">MODEL<b>{health.model}</b><div className="private">●　Local and private</div></div>
+          </aside>
+          <main className="main">
+            <header className="header"><div><div className="eyebrow">Good to see you</div><div className="title">Chat with Rose</div></div><div className="ready">●　Ready</div></header>
+            <div className="content">
+              <section className="messages">{messages.map((item, i) => <div className={"message " + item.role} key={i}><div className="bubble">{item.text}</div></div>)}{busy && <div className="message rose"><div className="bubble">Rose is thinking…</div></div>}{error && <div className="error">{error}</div>}<div ref={endRef}/></section>
+              <aside className="dashboard">{panel === "dashboard" ? <><h3>YOUR DASHBOARD</h3><div className="stat"><small>CONVERSATIONS</small><strong>{Math.max(0, messages.length - 1)}</strong></div><div className="stat"><small>AGENT STATUS</small><strong>Online</strong></div><p className="hint">This space is ready for useful widgets, notes, metrics, and shortcuts.</p></> : <><h3>CONVERSATION HISTORY</h3><p className="hint">Your conversation is stored by the Clawbot SQLite memory and can be continued here.</p></>}</aside>
+            </div>
+            <div className="composer"><textarea value={draft} onChange={e => setDraft(e.target.value)} onKeyDown={keyDown} placeholder="Message Rose…" disabled={busy}/><button type="submit" className="send" onClick={send} disabled={busy || !draft.trim()}>Send　➤</button></div><div className="tip">Shift + Enter for a new line　·　Rose uses the enabled Clawbot tools</div>
+          </main>
+        </form>;
+      }
+      ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    </script>
+  </body>
+</html>

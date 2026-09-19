@@ -7,3 +7,4 @@ venv/
 *.pid
 .coverage
 set_env.sh
+Rose/Rose.app/

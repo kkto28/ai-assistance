@@ -12,6 +12,7 @@ it in prose.
 - `4010669` (`feat(weather): add BBC weather location tools`)
 
 ### Added
+- React Rose desktop UI with a Python agent API and native macOS wrapper
 - Ollama provider support with iterative tool-call execution
 - Ollama setup, Homebrew service management, and log-tail documentation
 - `tests/test_skills_registry.py`: registry registration, schema generation,
@@ -25,6 +26,8 @@ it in prose.
   `clawbot/run_telegram.sh`
 
 ### Changed
+- Rose keeps its sidebar and avatar visible during long chats and uses a
+  compact native window layout
 - Ollama is the default model provider and `qwen3:8b` is the default model
 - Scheduler and launcher documentation in `clawbot/README.md`
 - Launcher scripts now use environment-provided credentials and validate the
@@ -37,6 +40,8 @@ it in prose.
 - Git now ignores untracked `run_*.sh` launcher scripts
 
 ### Fixed
+- Rose startup waits for the Python API before loading WebKit, avoiding an
+  intermittent blank native app window
 - Scheduler startup now runs as a module with the correct `PYTHONPATH`,
   avoiding package import failures
 
