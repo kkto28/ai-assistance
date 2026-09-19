@@ -23,9 +23,12 @@ def test_open_web_page_returns_readable_text(monkeypatch):
     result = web_search_skill.open_web_page("https://example.com")
 
     assert result == (
-        "Source: https://example.com\n\n"
-        "TL;DR: Example Hello world.\n\n"
-        "Example\nHello world."
+        "## Web page\n\n"
+        "**Source:** https://example.com\n\n"
+        "**TL;DR:** Example Hello world.\n\n"
+        "**Page content:**\n"
+        "- Example\n"
+        "- Hello world."
     )
 
 
@@ -91,10 +94,18 @@ def test_search_web_supports_multiple_types(monkeypatch):
 
     monkeypatch.setattr(web_search_skill, "DDGS", FakeDDGS)
 
-    assert "Text results for: rose assistant" in web_search_skill.search_web("rose assistant")
-    assert "News results for: rose assistant" in web_search_skill.search_web("rose assistant", "news")
-    assert "Image results for: rose assistant" in web_search_skill.search_web("rose assistant", "images")
-    assert "Video results for: rose assistant" in web_search_skill.search_web("rose assistant", "videos")
+    result = web_search_skill.search_web("rose assistant")
+
+    assert "## Text search results" in result
+    assert "**Query:** `rose assistant`" in result
+    assert "**Results:** 1" in result
+    assert "1. **Text result**" in result
+    assert "- A text result." in result
+    assert "- Link: https://example.com" in result
+
+    assert "## News search results" in web_search_skill.search_web("rose assistant", "news")
+    assert "## Image search results" in web_search_skill.search_web("rose assistant", "images")
+    assert "## Video search results" in web_search_skill.search_web("rose assistant", "videos")
     assert [call[0] for call in calls] == ["text", "news", "images", "videos"]
 
 

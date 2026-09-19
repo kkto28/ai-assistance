@@ -14,7 +14,8 @@ it in prose.
 ### Added
 - Read-only web search skill with `open_web_page` and `search_web` tools,
   including DuckDuckGo text, news, image, and video search; page results now
-  include an LLM-generated concise `TL;DR` with an extractive fallback
+  include an LLM-generated concise `TL;DR` with an extractive fallback and
+  chat-friendly point-form formatting
 - Rose approval controls for dangerous tools in the sidebar
 - React Rose desktop UI with a Python agent API and native macOS wrapper
 - Ollama provider support with iterative tool-call execution

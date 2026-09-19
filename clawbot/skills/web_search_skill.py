@@ -219,11 +219,19 @@ def _format_search_results(
     labels = {"text": "Text", "news": "News", "images": "Image", "videos": "Video"}
     label = labels[search_type]
     if not results:
-        return f"No {label.casefold()} results found for '{query}'."
+        return f"**{label} search**\n\n- No results found for `{query}`."
 
-    lines = [f"{label} results for: {query}"]
+    lines = [
+        f"## {label} search results",
+        "",
+        f"**Query:** `{query}`",
+        f"**Results:** {len(results)}",
+        "",
+    ]
     for index, result in enumerate(results, start=1):
-        title = result.get("title") or result.get("name") or "(untitled)"
+        title = " ".join(
+            str(result.get("title") or result.get("name") or "(untitled)").split()
+        )
         url = result.get("href") or result.get("url") or result.get("image")
         detail = (
             result.get("body")
@@ -232,12 +240,26 @@ def _format_search_results(
             or result.get("source")
             or ""
         )
-        lines.append(f"{index}. {title}")
+        lines.append(f"{index}. **{title}**")
         if detail:
-            lines.append(f"   {detail}")
+            lines.append(f"   - {str(detail).strip()}")
         if url:
-            lines.append(f"   {url}")
+            lines.append(f"   - Link: {url}")
+        if index < len(results):
+            lines.append("")
     return "\n".join(lines)
+
+
+def _format_page_result(target: str, summary: str, text: str) -> str:
+    paragraphs = [line.strip() for line in text.splitlines() if line.strip()]
+    content = "\n".join(f"- {paragraph}" for paragraph in paragraphs)
+    return (
+        "## Web page\n\n"
+        f"**Source:** {target}\n\n"
+        f"**TL;DR:** {summary}\n\n"
+        "**Page content:**\n"
+        f"{content}"
+    )
 
 
 @tool(
@@ -256,7 +278,7 @@ def open_web_page(url: str) -> str:
         summary = _tldr(text)
         if len(text) > _MAX_OUTPUT:
             text = text[:_MAX_OUTPUT] + "\n[Output truncated]"
-        return f"Source: {target}\n\nTL;DR: {summary}\n\n{text}"
+        return _format_page_result(target, summary, text)
     except (HTTPError, URLError, TimeoutError, OSError, ValueError) as exc:
         return _format_error("could not open web page", exc)
 
@@ -264,7 +286,7 @@ def open_web_page(url: str) -> str:
 @tool(
     name="search_web",
     description=(
-        "Search the public web. Set search_type to text, "
+        "Search content from public web. Set search_type to text, "
         "news, images, or videos."
     ),
 )
