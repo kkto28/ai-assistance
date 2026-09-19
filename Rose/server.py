@@ -2,12 +2,15 @@
 from __future__ import annotations
 
 import json
+import errno
 import sys
 import threading
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.error import URLError
+from urllib.request import urlopen
 from urllib.parse import urlparse
 
 
@@ -24,6 +27,8 @@ agent_lock = threading.Lock()
 executor = ThreadPoolExecutor(max_workers=2)
 jobs = {}
 jobs_lock = threading.Lock()
+HOST = "127.0.0.1"
+PORT = 8765
 
 
 def run_chat_job(job_id: str, text: str):
@@ -39,6 +44,17 @@ def run_chat_job(job_id: str, text: str):
         result = {"status": "error", "error": str(exc)}
     with jobs_lock:
         jobs[job_id] = result
+
+
+def existing_rose_server() -> bool:
+    try:
+        with urlopen(
+            f"http://{HOST}:{PORT}/api/health", timeout=0.5
+        ) as response:
+            payload = json.loads(response.read())
+        return payload.get("name") == config.name and payload.get("ready") is True
+    except (OSError, URLError, ValueError, json.JSONDecodeError):
+        return False
 
 
 class RoseHandler(BaseHTTPRequestHandler):
@@ -118,10 +134,19 @@ class RoseHandler(BaseHTTPRequestHandler):
 
 
 def main():
-    host = "127.0.0.1"
-    port = 8765
-    server = ThreadingHTTPServer((host, port), RoseHandler)
-    print(f"Rose is ready at http://{host}:{port}")
+    if existing_rose_server():
+        print(f"Rose is already running at http://{HOST}:{PORT}")
+        return
+    try:
+        server = ThreadingHTTPServer((HOST, PORT), RoseHandler)
+    except OSError as exc:
+        if exc.errno == errno.EADDRINUSE:
+            raise SystemExit(
+                f"Port {PORT} is already in use by another service. "
+                f"Stop it or run Rose on an available port."
+            ) from exc
+        raise
+    print(f"Rose is ready at http://{HOST}:{PORT}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

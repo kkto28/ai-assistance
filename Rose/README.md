@@ -16,6 +16,15 @@ python Rose/server.py
 Open <http://127.0.0.1:8765> in your browser. The server prints the URL and
 stops with `Ctrl+C`.
 
+If you start Rose again while it is already running, the second process now
+detects the existing Rose server and exits cleanly. To find and stop a
+different process using the port:
+
+```bash
+lsof -nP -iTCP:8765 -sTCP:LISTEN
+kill <PID>
+```
+
 For a native macOS window instead of a browser tab:
 
 ```bash
@@ -25,6 +34,9 @@ For a native macOS window instead of a browser tab:
 This compiles and launches a small AppKit/WebKit wrapper. It starts
 `Rose/server.py` in the background, displays the React interface in the app
 window, and stops the backend when the window closes.
+
+The native app sets its Dock icon from `Rose/assets/Rose.png` when it starts,
+so replacing that image also updates the app icon.
 
 For Ollama:
 

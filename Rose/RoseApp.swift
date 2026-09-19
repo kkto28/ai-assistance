@@ -10,6 +10,7 @@ final class RoseApplication: NSObject, NSApplicationDelegate, WKNavigationDelega
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         startServer()
+        setRoseDockIcon()
 
         let configuration = WKWebViewConfiguration()
         webView = WKWebView(frame: .zero, configuration: configuration)
@@ -118,6 +119,64 @@ final class RoseApplication: NSObject, NSApplicationDelegate, WKNavigationDelega
         } catch {
             showStartupError(error.localizedDescription)
         }
+    }
+
+    private func setRoseDockIcon() {
+        let repositoryRoot = ProcessInfo.processInfo.environment["ROSE_ROOT"]
+            ?? FileManager.default.currentDirectoryPath
+        let imagePath = repositoryRoot + "/Rose/assets/Rose.png"
+        guard let source = NSImage(contentsOfFile: imagePath) else {
+            return
+        }
+
+        let size = NSSize(width: 512, height: 512)
+        let icon = NSImage(size: size)
+        icon.lockFocus()
+
+        NSColor.clear.setFill()
+        NSBezierPath(rect: NSRect(origin: .zero, size: size)).fill()
+
+        let iconRect = NSRect(x: 8, y: 8, width: 496, height: 496)
+        let roundedRect = NSBezierPath(
+            roundedRect: iconRect,
+            xRadius: 112,
+            yRadius: 112
+        )
+        roundedRect.addClip()
+
+        NSColor(calibratedRed: 0.095, green: 0.13, blue: 0.19, alpha: 1)
+            .setFill()
+        roundedRect.fill()
+
+        let sourceSize = source.size
+        let scale = max(iconRect.width / sourceSize.width, iconRect.height / sourceSize.height)
+        let fittedSize = NSSize(
+            width: sourceSize.width * scale,
+            height: sourceSize.height * scale
+        )
+        let imageRect = NSRect(
+            x: iconRect.midX - fittedSize.width / 2,
+            y: iconRect.midY - fittedSize.height / 2,
+            width: fittedSize.width,
+            height: fittedSize.height
+        )
+        source.draw(
+            in: imageRect,
+            from: NSRect(origin: .zero, size: sourceSize),
+            operation: .sourceOver,
+            fraction: 1
+        )
+
+        let border = NSBezierPath(
+            roundedRect: NSInsetRect(iconRect, 5, 5),
+            xRadius: 107,
+            yRadius: 107
+        )
+        border.lineWidth = 10
+        NSColor.white.setStroke()
+        border.stroke()
+        icon.unlockFocus()
+        NSApp.applicationIconImage = icon
     }
 
     private func showStartupError(_ message: String) {

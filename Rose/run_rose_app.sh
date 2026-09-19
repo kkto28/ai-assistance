@@ -6,6 +6,7 @@ APP_PATH="$SCRIPT_DIR/Rose.app"
 
 rm -rf "$APP_PATH"
 mkdir -p "$APP_PATH/Contents/MacOS"
+
 cat >"$APP_PATH/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
