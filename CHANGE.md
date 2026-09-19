@@ -31,6 +31,7 @@ it in prose.
 - Morning briefings now run daily at 09:00
 - The commit-message skill now requires updating and verifying `CHANGE.md`
   before creating commits
+- Git now ignores untracked `run_*.sh` launcher scripts
 
 ### Fixed
 - Scheduler startup now runs as a module with the correct `PYTHONPATH`,

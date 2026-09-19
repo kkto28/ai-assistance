@@ -6,3 +6,4 @@ venv/
 *.log
 *.pid
 .coverage
+run_*.sh
