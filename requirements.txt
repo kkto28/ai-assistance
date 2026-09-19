@@ -4,6 +4,7 @@ anthropic>=0.40.0
 # Optional model backends -- uncomment what you use
 openai>=1.50.0
 ollama>=0.6.2
+ddgs>=9.0.0
 
 # Scheduling
 apscheduler>=3.10.0

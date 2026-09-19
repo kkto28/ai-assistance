@@ -42,6 +42,7 @@ class Config:
         "skills.memory_skill",
         "skills.weather_skill",
         "skills.telegram_skill",
+        "skills.web_search_skill",
     ])
 
 

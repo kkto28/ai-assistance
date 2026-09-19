@@ -105,6 +105,20 @@ and file mutation tools remain protected.
 Send me a Telegram message saying "The backup finished."
 ```
 
+The web search skill provides read-only internet access and DuckDuckGo text, news,
+image, and video search:
+
+```text
+Search the web for the latest Ollama tool-calling documentation.
+Open https://ollama.com/blog/tool-support and summarize it.
+```
+
+Use `search_type` as `text` (default), `news`, `images`, or `videos` when a
+specific result type is needed.
+`open_web_page` includes a short `TL;DR` followed by the extracted page text.
+The TL;DR uses the configured model provider and falls back to a local
+extractive summary if the model is unavailable.
+
 To run the scheduler in the background:
 
 ```bash

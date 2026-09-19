@@ -12,6 +12,9 @@ it in prose.
 - `4010669` (`feat(weather): add BBC weather location tools`)
 
 ### Added
+- Read-only web search skill with `open_web_page` and `search_web` tools,
+  including DuckDuckGo text, news, image, and video search; page results now
+  include an LLM-generated concise `TL;DR` with an extractive fallback
 - Rose approval controls for dangerous tools in the sidebar
 - React Rose desktop UI with a Python agent API and native macOS wrapper
 - Ollama provider support with iterative tool-call execution
