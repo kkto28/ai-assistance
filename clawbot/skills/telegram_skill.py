@@ -38,7 +38,6 @@ def _telegram_request(message: str, chat_id: str) -> dict:
         "Send a message to the configured Telegram chat. Use this when the "
         "user asks you to notify or message them on Telegram."
     ),
-    dangerous=True,
 )
 def send_telegram_message(message: str) -> str:
     """Send a message to the configured TELEGRAM_CHAT_ID."""

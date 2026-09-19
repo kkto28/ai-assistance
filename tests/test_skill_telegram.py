@@ -101,5 +101,5 @@ def test_send_telegram_message_reports_telegram_api_errors(monkeypatch):
 def test_send_telegram_message_registers_as_a_skill():
     spec = registry.get("send_telegram_message")
     assert spec.func is telegram_skill.send_telegram_message
-    assert spec.dangerous is True
+    assert spec.dangerous is False
     assert "chat_id" not in spec.to_schema()["input_schema"]["properties"]

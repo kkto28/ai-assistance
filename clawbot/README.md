@@ -98,6 +98,8 @@ local-only. Keep the process running for APScheduler to trigger the job.
 The agent can also send a proactive Telegram message with the
 `send_telegram_message` skill. Configure the same variables, then ask Rose
 to send a message. The skill always uses the configured `TELEGRAM_CHAT_ID`:
+Telegram delivery does not require the dangerous-tool approval prompt; shell
+and file mutation tools remain protected.
 
 ```text
 Send me a Telegram message saying "The backup finished."

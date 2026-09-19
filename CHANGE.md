@@ -27,6 +27,8 @@ it in prose.
   `clawbot/run_telegram.sh`
 
 ### Changed
+- Telegram proactive messages no longer require Rose approval; shell and file
+  mutation tools remain protected by the dangerous-tool gate
 - Rose keeps its sidebar and avatar visible during long chats and uses a
   compact native window layout
 - Rose uses the source photo for a rounded, white-bordered macOS Dock icon
