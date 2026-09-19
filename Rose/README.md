@@ -56,5 +56,8 @@ Replace the Rose photo by replacing `Rose/assets/Rose.png`. The dashboard is
 an extension area for future widgets, notes, metrics, and shortcuts.
 
 Dangerous Clawbot tools remain protected by `CLAWBOT_AUTO_APPROVE`. With the
-default `false` setting, the web UI declines those tools rather than allowing
-a server-side approval prompt.
+default `false` setting, Rose pauses the chat and shows an Approve/Deny card
+in the sidebar and above the conversation.
+
+Ollama tool-capable models are configured to use actual tool calls for action
+requests rather than only describing what they would do.

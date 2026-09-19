@@ -14,6 +14,7 @@ and skills/ only depend on Agent.handle_message().
 """
 from __future__ import annotations
 import json
+import re
 
 from config import config
 from memory.db import Memory
@@ -121,10 +122,12 @@ class Agent:
         ]
         tools = self._openai_tools()
 
+        repair_attempted = False
         for _ in range(8):
             request = {
                 "model": config.model_name,
                 "messages": request_messages,
+                "think": False,
             }
             if tools:
                 request["tools"] = tools
@@ -134,6 +137,23 @@ class Agent:
             tool_calls = message.tool_calls or []
 
             if not tool_calls:
+                if (
+                    not repair_attempted
+                    and self._looks_like_action_request(request_messages)
+                ):
+                    repair_attempted = True
+                    request_messages.append(
+                        {
+                            "role": "user",
+                            "content": (
+                                "You must execute the requested action now. "
+                                "Do not say you cannot execute it. Emit the "
+                                "actual matching tool call, especially "
+                                "run_shell for a shell command."
+                            ),
+                        }
+                    )
+                    continue
                 return message.content or "(no response)"
 
             request_messages.append(self._ollama_assistant_message(message))
@@ -145,11 +165,34 @@ class Agent:
         return "Stopped after reaching the max tool-call turns for this message."
 
     @staticmethod
+    def _looks_like_action_request(messages: list[dict]) -> bool:
+        if not messages:
+            return False
+        latest = messages[-1]
+        if latest.get("role") != "user":
+            return False
+        text = str(latest.get("content", "")).lower()
+        return bool(
+            re.search(
+                r"\b(run|execute|launch|start|stop|restart|create|write|"
+                r"delete|remove|save|change|modify|update)\b",
+                text,
+            )
+        )
+
+    @staticmethod
     def _system_prompt() -> str:
         return f"""You are {config.name}, a personal AI agent with real tools:
 you can run shell commands, read/write files in your workspace, and
-remember facts across sessions. Be direct and only use a tool when it's
-actually needed to answer the request."""
+remember facts across sessions.
+
+When the user asks you to perform an action, you MUST call the matching
+tool instead of claiming that you cannot perform it. In particular:
+- use run_shell for shell commands;
+- use read_file, write_file, or list_files for workspace files;
+- use remember or recall for saved facts.
+Do not describe a tool call in plain text. Emit the actual tool call.
+Be direct and only use a tool when it is actually needed."""
 
     @staticmethod
     def _openai_tools() -> list[dict]:

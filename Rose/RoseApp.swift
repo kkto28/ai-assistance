@@ -90,9 +90,16 @@ final class RoseApplication: NSObject, NSApplicationDelegate, WKNavigationDelega
             DispatchQueue.main.async {
                 guard ready else { return }
                 timer.invalidate()
-                self.webView.load(
-                    URLRequest(url: URL(string: "http://127.0.0.1:8765")!)
-                )
+                var components = URLComponents(
+                    string: "http://127.0.0.1:8765"
+                )!
+                components.queryItems = [
+                    URLQueryItem(
+                        name: "v",
+                        value: String(Int(Date().timeIntervalSince1970))
+                    )
+                ]
+                self.webView.load(URLRequest(url: components.url!))
             }
         }.resume()
     }

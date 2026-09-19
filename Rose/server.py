@@ -33,17 +33,37 @@ PORT = 8765
 
 def run_chat_job(job_id: str, text: str):
     try:
+        def approve_tool(tool_name, tool_input):
+            decision = threading.Event()
+            with jobs_lock:
+                job = jobs[job_id]
+                job["status"] = "waiting_approval"
+                job["approval"] = {
+                    "tool": tool_name,
+                    "input": tool_input,
+                }
+                job["decision"] = decision
+                job["approved"] = None
+            decision.wait()
+            with jobs_lock:
+                job = jobs[job_id]
+                approved = job.pop("approved", False)
+                job.pop("decision", None)
+                job.pop("approval", None)
+                job["status"] = "running"
+            return approved
+
         with agent_lock:
             reply = agent.handle_message(
                 channel="rose-web",
                 user_text=text,
-                approve_fn=lambda *_: config.auto_approve,
+                approve_fn=approve_tool,
             )
         result = {"status": "complete", "reply": reply}
     except Exception as exc:
         result = {"status": "error", "error": str(exc)}
     with jobs_lock:
-        jobs[job_id] = result
+        jobs[job_id].update(result)
 
 
 def existing_rose_server() -> bool:
@@ -76,6 +96,7 @@ class RoseHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
         self.end_headers()
         self.wfile.write(body)
 
@@ -88,6 +109,7 @@ class RoseHandler(BaseHTTPRequestHandler):
                     "name": config.name,
                     "provider": config.model_provider,
                     "model": config.model_name,
+                    "auto_approve": config.auto_approve,
                     "ready": True,
                 },
             )
@@ -99,7 +121,12 @@ class RoseHandler(BaseHTTPRequestHandler):
             if result is None:
                 self._send_json(404, {"error": "Chat job not found."})
             else:
-                self._send_json(200, result)
+                response = {
+                    key: value
+                    for key, value in result.items()
+                    if key not in ("decision", "approved")
+                }
+                self._send_json(200, response)
             return
         if path == "/":
             self._send_file(ROSE_DIR / "web" / "index.html", "text/html; charset=utf-8")
@@ -110,7 +137,27 @@ class RoseHandler(BaseHTTPRequestHandler):
         self._send_json(404, {"error": "Not found"})
 
     def do_POST(self):
-        if urlparse(self.path).path != "/api/chat":
+        path = urlparse(self.path).path
+        if path.startswith("/api/jobs/") and path.endswith("/approval"):
+            job_id = path.split("/")[3]
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                payload = json.loads(self.rfile.read(length))
+                approved = payload["approved"]
+                if not isinstance(approved, bool):
+                    raise ValueError("Approval must be true or false.")
+                with jobs_lock:
+                    job = jobs.get(job_id)
+                    if not job or job.get("status") != "waiting_approval":
+                        raise ValueError("This approval request is no longer active.")
+                    job["approved"] = approved
+                    decision = job["decision"]
+                decision.set()
+                self._send_json(200, {"status": "running"})
+            except (KeyError, ValueError, json.JSONDecodeError) as exc:
+                self._send_json(400, {"error": str(exc)})
+            return
+        if path != "/api/chat":
             self._send_json(404, {"error": "Not found"})
             return
         try:

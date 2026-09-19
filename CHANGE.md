@@ -12,6 +12,7 @@ it in prose.
 - `4010669` (`feat(weather): add BBC weather location tools`)
 
 ### Added
+- Rose approval controls for dangerous tools in the sidebar
 - React Rose desktop UI with a Python agent API and native macOS wrapper
 - Ollama provider support with iterative tool-call execution
 - Ollama setup, Homebrew service management, and log-tail documentation
@@ -29,6 +30,9 @@ it in prose.
 - Rose keeps its sidebar and avatar visible during long chats and uses a
   compact native window layout
 - Rose uses the source photo for a rounded, white-bordered macOS Dock icon
+- Ollama action requests explicitly disable thinking and require actual tool
+  calls when a matching skill is available
+- Rose keeps Approve/Deny controls out of the conversation column
 - Ollama is the default model provider and `qwen3:8b` is the default model
 - Scheduler and launcher documentation in `clawbot/README.md`
 - Launcher scripts now use environment-provided credentials and validate the
@@ -41,6 +45,7 @@ it in prose.
 - Git now ignores untracked `run_*.sh` launcher scripts
 
 ### Fixed
+- Ollama refusal responses are retried with an explicit tool-call instruction
 - Rose handles duplicate server starts without an address-in-use traceback
 - Rose startup waits for the Python API before loading WebKit, avoiding an
   intermittent blank native app window
@@ -48,6 +53,7 @@ it in prose.
   avoiding package import failures
 
 ### Tests
+- Ollama refusal recovery coverage in `tests/test_agent_loop.py`
 - Ollama agent-loop coverage in `tests/test_agent_loop.py`
 - Phase 1 registry tests: 4 passing
 - Phase 2 skill tests: 8 passing
