@@ -51,10 +51,21 @@ def morning_briefing() -> str:
     return reply
 
 
+def clear_all_history() -> str:
+    count = _get_agent().memory.clear_all_history()
+    result = f"Cleared {count} messages from all history."
+    print(f"[scheduled] {result}")
+    return result
+
+
 def start():
     scheduler.add_job(morning_briefing, "cron", hour=00, minute=40)
+    scheduler.add_job(clear_all_history, "cron", hour=1, minute=10)
     scheduler.start()
-    print("Scheduler started. Jobs: morning_briefing @ 00:40")
+    print(
+        "Scheduler started. Jobs: morning_briefing @ 00:40, "
+        "clear_all_history @ 01:10"
+    )
 
 
 if __name__ == "__main__":

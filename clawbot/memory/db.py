@@ -52,7 +52,7 @@ class Memory:
                 (channel, role, content, time.time()),
             )
 
-    def recent_history(self, channel: str, limit: int = 20) -> list[dict]:
+    def recent_history(self, channel: str, limit: int = 10) -> list[dict]:
         with self._conn() as conn:
             rows = conn.execute(
                 "SELECT role, content FROM messages WHERE channel = ? "
@@ -60,6 +60,16 @@ class Memory:
                 (channel, limit),
             ).fetchall()
         return [{"role": r, "content": c} for r, c in reversed(rows)]
+
+    def clear_channel_history(self, channel: str) -> int:
+        with self._conn() as conn:
+            cursor = conn.execute("DELETE FROM messages WHERE channel = ?", (channel,))
+        return cursor.rowcount
+
+    def clear_all_history(self) -> int:
+        with self._conn() as conn:
+            cursor = conn.execute("DELETE FROM messages")
+        return cursor.rowcount
 
     # --- freeform key/value notes (agent's long-term memory) ---
     def remember(self, key: str, value: str):
@@ -74,6 +84,11 @@ class Memory:
         with self._conn() as conn:
             row = conn.execute("SELECT value FROM notes WHERE key = ?", (key,)).fetchone()
         return row[0] if row else None
+
+    def forget(self, key: str) -> bool:
+        with self._conn() as conn:
+            cursor = conn.execute("DELETE FROM notes WHERE key = ?", (key,))
+        return cursor.rowcount > 0
 
     def all_notes(self) -> dict[str, str]:
         with self._conn() as conn:

@@ -38,7 +38,16 @@ Never invent intent, files, tests, or behavior that are not supported by the dif
    - `docs` for documentation only,
    - `build` or `ci` for tooling/build pipeline changes,
    - `chore` for maintenance that does not fit the above.
-5. Produce the requested output format. If the user asks only for a message, do not add unnecessary commentary.
+5. Before preparing or creating a commit, update `CHANGE.md` with a concise
+   entry for every user-facing or repository-significant change. Keep the
+   changelog entry aligned with the actual diff, include relevant tests or
+   validation when useful, and do not overwrite unrelated unreleased notes.
+   If `CHANGE.md` is already updated for the current change, verify that it is
+   included in the commit.
+6. Reinspect the final staged diff, including `CHANGE.md`, and confirm that
+   implementation, tests, documentation, and changelog changes are coherent.
+7. Produce the requested output format. If the user asks only for a message,
+   do not add unnecessary commentary.
 
 ## Default output
 

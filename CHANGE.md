@@ -26,6 +26,10 @@ it in prose.
 - Scheduler and launcher documentation in `clawbot/README.md`
 - Launcher scripts now use environment-provided credentials and validate the
   configured Python environment before starting
+- Memory APIs now support deleting a single channel or all conversation
+  history, and the scheduler clears all history daily at 01:10
+- The commit-message skill now requires updating and verifying `CHANGE.md`
+  before creating commits
 
 ### Fixed
 - Scheduler startup now runs as a module with the correct `PYTHONPATH`,
@@ -36,6 +40,7 @@ it in prose.
 - Phase 2 skill tests: 8 passing
 - Weather skill and scheduler tests: 35 passing, 2 opt-in live weather tests
   skipped by default
+- Added memory deletion and scheduled cleanup coverage
 
 ---
 

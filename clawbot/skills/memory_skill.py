@@ -19,3 +19,19 @@ def remember(key: str, value: str) -> str:
 def recall(key: str) -> str:
     value = _memory.recall(key)
     return value if value is not None else f"Nothing remembered under '{key}'."
+
+
+@tool(name="forget", description="Remove a previously remembered fact by key.")
+def forget(key: str) -> str:
+    if _memory.forget(key):
+        return f"Forgot '{key}'."
+    return f"Nothing remembered under '{key}'."
+
+
+@tool(
+    name="clear_channel_history",
+    description="Delete all conversation history for a channel.",
+)
+def clear_channel_history(channel: str) -> str:
+    count = _memory.clear_channel_history(channel)
+    return f"Cleared {count} messages from channel '{channel}'."

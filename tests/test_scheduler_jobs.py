@@ -56,3 +56,29 @@ def test_morning_briefing_sends_reply_to_telegram_when_configured(monkeypatch):
 
     assert result == "Good morning."
     send_message.assert_called_once_with("Good morning.")
+
+
+def test_clear_all_history_removes_messages_from_all_channels(monkeypatch):
+    agent = Mock()
+    agent.memory.clear_all_history.return_value = 4
+    monkeypatch.setattr(jobs, "agent", agent)
+
+    result = jobs.clear_all_history()
+
+    assert result == "Cleared 4 messages from all history."
+    agent.memory.clear_all_history.assert_called_once_with()
+
+
+def test_start_schedules_history_cleanup_at_one_am(monkeypatch):
+    scheduler = Mock()
+    monkeypatch.setattr(jobs, "scheduler", scheduler)
+
+    jobs.start()
+
+    scheduler.add_job.assert_any_call(
+        jobs.clear_all_history,
+        "cron",
+        hour=1,
+        minute=10,
+    )
+    scheduler.start.assert_called_once_with()
