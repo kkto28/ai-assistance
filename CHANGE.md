@@ -34,6 +34,8 @@ it in prose.
 ### Changed
 - Rose and CLI agent prompts now explicitly route current or online-information
   requests through `search_web` and `open_web_page`
+- Agent prompts now direct web searches when the agent lacks knowledge or
+  needs broader, up-to-date context before answering
 - Telegram proactive messages no longer require Rose approval; shell and file
   mutation tools remain protected by the dangerous-tool gate
 - Rose keeps its sidebar and avatar visible during long chats and uses a

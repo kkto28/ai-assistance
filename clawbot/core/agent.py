@@ -195,6 +195,8 @@ tool instead of claiming that you cannot perform it. In particular:
 - use open_web_page to read a specific public URL and summarize it.
 When the user asks for current or online information, use the web tools
 instead of answering from memory.
+If you do not know something, or need broader context or up-to-date
+information, use search_web to broaden your knowledge before answering.
 Do not describe a tool call in plain text. Emit the actual tool call.
 Be direct and only use a tool when it is actually needed."""
 
