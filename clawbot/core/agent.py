@@ -56,6 +56,8 @@ class Agent:
     def _run_loop(self, messages: list[dict], approve_fn) -> str:
         if config.model_provider == "openai":
             return self._run_openai_loop(messages, approve_fn)
+        if config.model_provider == "ollama":
+            return self._run_ollama_loop(messages, approve_fn)
         return self._run_anthropic_loop(messages, approve_fn)
 
     def _run_anthropic_loop(self, messages: list[dict], approve_fn) -> str:
@@ -112,6 +114,36 @@ class Agent:
 
         return "Stopped after reaching the max tool-call turns for this message."
 
+    def _run_ollama_loop(self, messages: list[dict], approve_fn) -> str:
+        request_messages = [
+            {"role": "system", "content": self._system_prompt()},
+            *messages,
+        ]
+        tools = self._openai_tools()
+
+        for _ in range(8):
+            request = {
+                "model": config.model_name,
+                "messages": request_messages,
+            }
+            if tools:
+                request["tools"] = tools
+
+            response = self._client.chat(**request)
+            message = response.message
+            tool_calls = message.tool_calls or []
+
+            if not tool_calls:
+                return message.content or "(no response)"
+
+            request_messages.append(self._ollama_assistant_message(message))
+            for call in tool_calls:
+                request_messages.append(
+                    self._execute_ollama_tool(call, approve_fn)
+                )
+
+        return "Stopped after reaching the max tool-call turns for this message."
+
     @staticmethod
     def _system_prompt() -> str:
         return f"""You are {config.name}, a personal AI agent with real tools:
@@ -151,6 +183,22 @@ actually needed to answer the request."""
             ],
         }
 
+    @staticmethod
+    def _ollama_assistant_message(message) -> dict:
+        return {
+            "role": "assistant",
+            "content": message.content or "",
+            "tool_calls": [
+                {
+                    "function": {
+                        "name": call.function.name,
+                        "arguments": dict(call.function.arguments),
+                    }
+                }
+                for call in (message.tool_calls or [])
+            ],
+        }
+
     def _execute_openai_tool(self, call, approve_fn) -> dict:
         try:
             tool_input = json.loads(call.function.arguments)
@@ -169,6 +217,19 @@ actually needed to answer the request."""
             "role": "tool",
             "tool_call_id": call.id,
             "content": str(result),
+        }
+
+    def _execute_ollama_tool(self, call, approve_fn) -> dict:
+        tool_name = call.function.name
+        tool_input = call.function.arguments
+        spec = registry.get(tool_name)
+        result = self._execute_tool_call(
+            spec, tool_name, tool_input, approve_fn
+        )
+        return {
+            "role": "tool",
+            "content": str(result),
+            "tool_name": tool_name,
         }
 
     def _execute_tool(self, call, approve_fn) -> dict:

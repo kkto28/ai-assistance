@@ -14,8 +14,9 @@ class Config:
 
     # --- Model backend ---
     # "anthropic" | "openai" | "ollama"
-    model_provider: str = os.getenv("CLAWBOT_MODEL_PROVIDER", "openai")
-    model_name: str = os.getenv("CLAWBOT_MODEL_NAME", "gpt-5-nano")
+    model_provider: str = os.getenv("CLAWBOT_MODEL_PROVIDER", "ollama")
+    # "gpt-5-nano" | "qwen3:8b"
+    model_name: str = os.getenv("CLAWBOT_MODEL_NAME", "qwen3:8b")
     anthropic_api_key: str = os.getenv("ANTHROPIC_API_KEY", "")
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
     ollama_host: str = os.getenv("OLLAMA_HOST", "http://localhost:11434")

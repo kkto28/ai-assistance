@@ -12,6 +12,8 @@ it in prose.
 - `4010669` (`feat(weather): add BBC weather location tools`)
 
 ### Added
+- Ollama provider support with iterative tool-call execution
+- Ollama setup, Homebrew service management, and log-tail documentation
 - `tests/test_skills_registry.py`: registry registration, schema generation,
   schema enumeration, and module loading coverage
 - `tests/test_skill_file.py`, `tests/test_skill_shell.py`, and
@@ -23,6 +25,7 @@ it in prose.
   `clawbot/run_telegram.sh`
 
 ### Changed
+- Ollama is the default model provider and `qwen3:8b` is the default model
 - Scheduler and launcher documentation in `clawbot/README.md`
 - Launcher scripts now use environment-provided credentials and validate the
   configured Python environment before starting
@@ -38,6 +41,7 @@ it in prose.
   avoiding package import failures
 
 ### Tests
+- Ollama agent-loop coverage in `tests/test_agent_loop.py`
 - Phase 1 registry tests: 4 passing
 - Phase 2 skill tests: 8 passing
 - Weather skill and scheduler tests: 35 passing, 2 opt-in live weather tests

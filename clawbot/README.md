@@ -41,6 +41,37 @@ python main.py cli
 Dangerous tools (`run_shell`, `write_file`) will ask for approval in the
 terminal before running, unless you set `CLAWBOT_AUTO_APPROVE=true`.
 
+To use a local Ollama model with the same tool-calling loop:
+
+```bash
+brew install ollama
+brew services start ollama
+ollama pull qwen3:8b
+export CLAWBOT_MODEL_PROVIDER=ollama
+export CLAWBOT_MODEL_NAME=qwen3:8b
+export OLLAMA_HOST=http://localhost:11434
+python main.py cli
+```
+
+The Ollama model must support tool calling. The agent sends tool results
+back to Ollama and continues the loop until the model returns final text.
+
+Manage the Ollama service with Homebrew:
+
+```bash
+brew services start ollama    # start Ollama in the background
+brew services stop ollama     # stop Ollama
+brew services restart ollama  # restart Ollama
+brew services list             # check service status
+tail -f /opt/homebrew/var/log/ollama.log  # follow Ollama logs
+```
+
+If you installed Ollama without Homebrew, run it directly instead:
+
+```bash
+ollama serve
+```
+
 ## Running scheduled jobs
 
 The scheduler currently runs `morning_briefing` every day at **08:00** in
