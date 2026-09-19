@@ -12,6 +12,7 @@ it in prose.
 - `4010669` (`feat(weather): add BBC weather location tools`)
 
 ### Added
+- Reusable APScheduler interval jobs, including hourly scheduling support
 - Read-only web search skill with `open_web_page` and `search_web` tools,
   including DuckDuckGo text, news, image, and video search; page results now
   include an LLM-generated concise `TL;DR` with an extractive fallback and

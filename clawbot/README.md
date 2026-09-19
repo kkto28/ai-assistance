@@ -74,7 +74,7 @@ ollama serve
 
 ## Running scheduled jobs
 
-The scheduler currently runs `morning_briefing` every day at **08:00** in
+The scheduler currently runs `morning_briefing` every day at **09:00** in
 the machine's local timezone. Run it from the `clawbot/` directory:
 
 ```bash
@@ -94,6 +94,23 @@ python -m scheduler.jobs
 `TELEGRAM_CHAT_ID` is the chat or group where scheduled messages should be
 delivered. If either Telegram variable is missing, the job remains
 local-only. Keep the process running for APScheduler to trigger the job.
+
+Jobs can also run on a repeating interval. Register the callable before
+starting the scheduler; this example runs it every hour:
+
+```python
+from scheduler import jobs
+
+jobs.schedule_interval_job(
+    jobs.morning_briefing,
+    hours=1,
+    job_id="hourly-briefing",
+)
+jobs.start()
+```
+
+Use `minutes` or `seconds` instead of `hours` for shorter intervals. At least
+one interval value must be greater than zero.
 
 The agent can also send a proactive Telegram message with the
 `send_telegram_message` skill. Configure the same variables, then ask Rose

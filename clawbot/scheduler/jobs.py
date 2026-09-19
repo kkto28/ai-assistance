@@ -58,13 +58,34 @@ def clear_all_history() -> str:
     return result
 
 
+def schedule_interval_job(
+    job,
+    *,
+    hours: int = 0,
+    minutes: int = 0,
+    seconds: int = 0,
+    job_id: Optional[str] = None,
+) -> None:
+    """Schedule a callable on a repeating interval before starting the scheduler."""
+    if hours < 0 or minutes < 0 or seconds < 0:
+        raise ValueError("Interval values cannot be negative.")
+    if hours == 0 and minutes == 0 and seconds == 0:
+        raise ValueError("At least one interval value must be greater than zero.")
+
+    options = {"hours": hours, "minutes": minutes, "seconds": seconds}
+    if job_id:
+        options["id"] = job_id
+    scheduler.add_job(job, "interval", **options)
+
+
 def start():
     scheduler.add_job(morning_briefing, "cron", hour=9, minute=0)
     scheduler.add_job(clear_all_history, "cron", hour=1, minute=0)
     scheduler.start()
     print(
-        "Scheduler started. Jobs: morning_briefing @ 09:00, "
-        "clear_all_history @ 01:00"
+        "Scheduler started. Jobs: morning_briefing @ 08:00, "
+        "clear_all_history @ 01:00. "
+        "Use schedule_interval_job(..., hours=1) for hourly jobs."
     )
 
 

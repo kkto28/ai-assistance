@@ -69,6 +69,39 @@ def test_clear_all_history_removes_messages_from_all_channels(monkeypatch):
     agent.memory.clear_all_history.assert_called_once_with()
 
 
+def test_schedule_interval_job_supports_hourly_jobs(monkeypatch):
+    scheduler = Mock()
+    monkeypatch.setattr(jobs, "scheduler", scheduler)
+    task = Mock()
+
+    jobs.schedule_interval_job(task, hours=1, job_id="hourly-task")
+
+    scheduler.add_job.assert_called_once_with(
+        task,
+        "interval",
+        hours=1,
+        minutes=0,
+        seconds=0,
+        id="hourly-task",
+    )
+
+
+@pytest.mark.parametrize(
+    "interval",
+    [
+        {"hours": -1},
+        {"minutes": -1},
+        {"seconds": -1},
+        {},
+    ],
+)
+def test_schedule_interval_job_rejects_invalid_intervals(monkeypatch, interval):
+    monkeypatch.setattr(jobs, "scheduler", Mock())
+
+    with pytest.raises(ValueError):
+        jobs.schedule_interval_job(Mock(), **interval)
+
+
 def test_start_schedules_history_cleanup_at_one_am(monkeypatch):
     scheduler = Mock()
     monkeypatch.setattr(jobs, "scheduler", scheduler)
@@ -79,6 +112,12 @@ def test_start_schedules_history_cleanup_at_one_am(monkeypatch):
         jobs.clear_all_history,
         "cron",
         hour=1,
+        minute=0,
+    )
+    scheduler.add_job.assert_any_call(
+        jobs.morning_briefing,
+        "cron",
+        hour=9,
         minute=0,
     )
     scheduler.start.assert_called_once_with()
