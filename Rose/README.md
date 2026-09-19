@@ -52,6 +52,9 @@ does not require Node or npm. An internet connection is needed to load the
 React browser scripts. The Python backend itself uses only the standard
 library plus the project's existing Clawbot dependencies.
 
+Use `./Rose/run_rose.sh` when starting Rose from a terminal; it prefers the
+repository `venv`, matching the CLI dependency environment.
+
 Replace the Rose photo by replacing `Rose/assets/Rose.png`. The dashboard is
 an extension area for future widgets, notes, metrics, and shortcuts.
 
@@ -61,3 +64,7 @@ in the sidebar and above the conversation.
 
 Ollama tool-capable models are configured to use actual tool calls for action
 requests rather than only describing what they would do.
+
+For current online information, Rose uses the `search_web` and
+`open_web_page` tools from the shared Clawbot configuration. Restart Rose after
+changing enabled skills or dependencies so the backend reloads them.

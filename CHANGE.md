@@ -30,6 +30,8 @@ it in prose.
   `clawbot/run_telegram.sh`
 
 ### Changed
+- Rose and CLI agent prompts now explicitly route current or online-information
+  requests through `search_web` and `open_web_page`
 - Telegram proactive messages no longer require Rose approval; shell and file
   mutation tools remain protected by the dangerous-tool gate
 - Rose keeps its sidebar and avatar visible during long chats and uses a

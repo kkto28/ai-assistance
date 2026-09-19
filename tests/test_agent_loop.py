@@ -131,3 +131,11 @@ def test_ollama_loop_repairs_refusal_for_action_request(agent):
         for message in requests[1]["messages"]
         if message["role"] == "user"
     )
+
+
+def test_system_prompt_explains_web_search_tools(agent):
+    prompt = agent._system_prompt()
+
+    assert "use search_web for internet searches" in prompt
+    assert "use open_web_page to read a specific public URL" in prompt
+    assert "current or online information" in prompt

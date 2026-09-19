@@ -191,6 +191,10 @@ tool instead of claiming that you cannot perform it. In particular:
 - use run_shell for shell commands;
 - use read_file, write_file, or list_files for workspace files;
 - use remember or recall for saved facts.
+- use search_web for internet searches, including news, images, or videos;
+- use open_web_page to read a specific public URL and summarize it.
+When the user asks for current or online information, use the web tools
+instead of answering from memory.
 Do not describe a tool call in plain text. Emit the actual tool call.
 Be direct and only use a tool when it is actually needed."""
 

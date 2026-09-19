@@ -20,6 +20,7 @@ sys.path.insert(0, str(ROOT / "clawbot"))
 
 from config import config  # noqa: E402
 from core.agent import Agent  # noqa: E402
+from skills import registry  # noqa: E402
 
 
 agent = Agent()
@@ -110,6 +111,7 @@ class RoseHandler(BaseHTTPRequestHandler):
                     "provider": config.model_provider,
                     "model": config.model_name,
                     "auto_approve": config.auto_approve,
+                    "tools": sorted(tool.name for tool in registry.all()),
                     "ready": True,
                 },
             )
