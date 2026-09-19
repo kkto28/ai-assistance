@@ -27,7 +27,8 @@ it in prose.
 - Launcher scripts now use environment-provided credentials and validate the
   configured Python environment before starting
 - Memory APIs now support deleting a single channel or all conversation
-  history, and the scheduler clears all history daily at 01:10
+  history, and the scheduler clears all history daily at 01:00
+- Morning briefings now run daily at 09:00
 - The commit-message skill now requires updating and verifying `CHANGE.md`
   before creating commits
 

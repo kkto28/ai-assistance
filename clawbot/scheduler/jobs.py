@@ -59,12 +59,12 @@ def clear_all_history() -> str:
 
 
 def start():
-    scheduler.add_job(morning_briefing, "cron", hour=00, minute=40)
-    scheduler.add_job(clear_all_history, "cron", hour=1, minute=10)
+    scheduler.add_job(morning_briefing, "cron", hour=9, minute=0)
+    scheduler.add_job(clear_all_history, "cron", hour=1, minute=0)
     scheduler.start()
     print(
-        "Scheduler started. Jobs: morning_briefing @ 00:40, "
-        "clear_all_history @ 01:10"
+        "Scheduler started. Jobs: morning_briefing @ 09:00, "
+        "clear_all_history @ 01:00"
     )
 
 

@@ -79,6 +79,6 @@ def test_start_schedules_history_cleanup_at_one_am(monkeypatch):
         jobs.clear_all_history,
         "cron",
         hour=1,
-        minute=10,
+        minute=0,
     )
     scheduler.start.assert_called_once_with()
