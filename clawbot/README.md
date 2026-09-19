@@ -95,6 +95,14 @@ python -m scheduler.jobs
 delivered. If either Telegram variable is missing, the job remains
 local-only. Keep the process running for APScheduler to trigger the job.
 
+The agent can also send a proactive Telegram message with the
+`send_telegram_message` skill. Configure the same variables, then ask Rose
+to send a message. The skill always uses the configured `TELEGRAM_CHAT_ID`:
+
+```text
+Send me a Telegram message saying "The backup finished."
+```
+
 To run the scheduler in the background:
 
 ```bash

@@ -45,6 +45,8 @@ it in prose.
 - Git now ignores untracked `run_*.sh` launcher scripts
 
 ### Fixed
+- Telegram proactive messages now always use the configured
+  `TELEGRAM_CHAT_ID` instead of accepting a model-supplied destination
 - Ollama refusal responses are retried with an explicit tool-call instruction
 - Rose handles duplicate server starts without an address-in-use traceback
 - Rose startup waits for the Python API before loading WebKit, avoiding an
