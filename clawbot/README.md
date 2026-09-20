@@ -56,7 +56,72 @@ python main.py cli
 The Ollama model must support tool calling. The agent sends tool results
 back to Ollama and continues the loop until the model returns final text.
 
-Manage the Ollama service with Homebrew:
+To keep Ollama running after logout, install it as a system LaunchDaemon:
+
+```bash
+sudo tee /Library/LaunchDaemons/com.ollama.serve.plist > /dev/null <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.ollama.serve</string>
+
+  <key>UserName</key>
+  <string>tok13</string>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/tok13</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/bin/ollama</string>
+    <string>serve</string>
+  </array>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>HOME</key>
+    <string>/Users/tok13</string>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>OLLAMA_MODELS</key>
+    <string>/Users/tok13/.ollama/models</string>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>/Users/tok13/Library/Logs/ollama.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>/Users/tok13/Library/Logs/ollama-error.log</string>
+</dict>
+</plist>
+EOF
+
+sudo chown root:wheel /Library/LaunchDaemons/com.ollama.serve.plist
+sudo chmod 644 /Library/LaunchDaemons/com.ollama.serve.plist
+
+sudo mkdir -p /Users/tok13/Library/Logs
+sudo chown -R tok13:staff /Users/tok13/Library/Logs
+
+sudo launchctl bootout system/com.ollama.serve 2>/dev/null || true
+sudo plutil -lint /Library/LaunchDaemons/com.ollama.serve.plist
+sudo launchctl bootstrap system /Library/LaunchDaemons/com.ollama.serve.plist
+sudo launchctl kickstart -k system/com.ollama.serve
+
+sudo launchctl print system/com.ollama.serve | grep -E 'state =|pid =|last exit code|runs ='
+curl http://127.0.0.1:11434/api/tags
+
+```
+
+For a per-user Homebrew service instead:
 
 ```bash
 brew services start ollama    # start Ollama in the background
