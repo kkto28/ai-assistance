@@ -12,6 +12,8 @@ it in prose.
 - `4010669` (`feat(weather): add BBC weather location tools`)
 
 ### Added
+- Google Calendar skill with OAuth authentication, event listing, creation,
+  updates, deletion, UK date/time resolution, and relative weekday handling
 - LaunchDaemon setup instructions for keeping Ollama running after logout
 - Reusable APScheduler interval jobs, including hourly scheduling support
 - Read-only web search skill with `open_web_page` and `search_web` tools,
@@ -33,6 +35,8 @@ it in prose.
   `clawbot/run_telegram.sh`
 
 ### Changed
+- Calendar mutation tools now run without the dangerous-tool approval prompt
+- Calendar event times and relative date resolution default to `Europe/London`
 - Rose and CLI agent prompts now explicitly route current or online-information
   requests through `search_web` and `open_web_page`
 - Agent prompts now direct web searches when the agent lacks knowledge or

@@ -160,6 +160,35 @@ python -m scheduler.jobs
 delivered. If either Telegram variable is missing, the job remains
 local-only. Keep the process running for APScheduler to trigger the job.
 
+## Google Calendar
+
+The Google Calendar skill can list, create, update, and delete events. Enable
+the Google Calendar API in a Google Cloud project, create OAuth credentials for
+a desktop application, and obtain a refresh token with the
+`https://www.googleapis.com/auth/calendar` scope. Then configure:
+
+```bash
+export GOOGLE_CALENDAR_CLIENT_ID=your-client-id
+export GOOGLE_CALENDAR_CLIENT_SECRET=your-client-secret
+export GOOGLE_CALENDAR_REFRESH_TOKEN=your-refresh-token
+export GOOGLE_CALENDAR_DEFAULT_CALENDAR=primary  # optional
+```
+
+The skill refreshes the access token automatically. For short-lived/testing
+setups, `GOOGLE_CALENDAR_ACCESS_TOKEN` can be used instead. Ask Rose to list
+events first when you need an event ID to update or delete:
+
+```text
+Create a dentist appointment on 2026-09-25 at 10:00 to 11:00.
+List my upcoming calendar events.
+Update event EVENT_ID to start at 11:00 and end at 12:00 on 2026-09-25.
+Delete event EVENT_ID from my calendar.
+```
+
+Event times without an explicit timezone use `Europe/London`. Listing events
+defaults to events from the current time onward in UK time. You can provide
+`time_min` and `time_max` when a specific listing range is needed.
+
 Jobs can also run on a repeating interval. Register the callable before
 starting the scheduler; this example runs it every hour:
 

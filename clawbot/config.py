@@ -34,6 +34,15 @@ class Config:
     telegram_chat_id: str = os.getenv("TELEGRAM_CHAT_ID", "")
     discord_token: str = os.getenv("DISCORD_BOT_TOKEN", "")
 
+    # --- Google Calendar ---
+    google_calendar_access_token: str = os.getenv("GOOGLE_CALENDAR_ACCESS_TOKEN", "")
+    google_calendar_refresh_token: str = os.getenv("GOOGLE_CALENDAR_REFRESH_TOKEN", "")
+    google_calendar_client_id: str = os.getenv("GOOGLE_CALENDAR_CLIENT_ID", "")
+    google_calendar_client_secret: str = os.getenv("GOOGLE_CALENDAR_CLIENT_SECRET", "")
+    google_calendar_default_calendar: str = os.getenv(
+        "GOOGLE_CALENDAR_DEFAULT_CALENDAR", "primary"
+    )
+
     # --- Skills ---
     # Skill modules to load at startup. Add your own module names here.
     enabled_skills: list = field(default_factory=lambda: [
@@ -43,6 +52,7 @@ class Config:
         "skills.weather_skill",
         "skills.telegram_skill",
         "skills.web_search_skill",
+        "skills.google_calendar_skill",
     ])
 
 
