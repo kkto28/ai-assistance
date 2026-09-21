@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlencode
@@ -119,6 +119,52 @@ def _now_in_default_timezone() -> str:
     return datetime.now(ZoneInfo(_DEFAULT_TIMEZONE)).isoformat()
 
 
+def _parse_calendar_date_phrase(date_phrase: str) -> date:
+    phrase = " ".join(date_phrase.lower().split())
+    now = datetime.fromisoformat(_now_in_default_timezone())
+    if phrase in {"yesterday", "today", "tomorrow", "day after tomorrow"}:
+        offset = {
+            "yesterday": -1,
+            "today": 0,
+            "tomorrow": 1,
+            "day after tomorrow": 2,
+        }[phrase]
+        return now.date() + timedelta(days=offset)
+
+    for date_format in ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y"):
+        try:
+            return datetime.strptime(phrase, date_format).date()
+        except ValueError:
+            continue
+    raise ValueError(
+        "date_phrase must be today, tomorrow, yesterday, day after tomorrow, "
+        "an ISO date such as 2026-09-21, or a UK date such as 21/09/2026"
+    )
+
+
+def _listing_day_bounds(date_phrase: str) -> tuple[str, str]:
+    target_date = _parse_calendar_date_phrase(date_phrase)
+
+    start = datetime.combine(
+        target_date, datetime.min.time(), tzinfo=ZoneInfo(_DEFAULT_TIMEZONE)
+    )
+    end = datetime.combine(
+        target_date + timedelta(days=1),
+        datetime.min.time(),
+        tzinfo=ZoneInfo(_DEFAULT_TIMEZONE),
+    )
+    return start.isoformat(), end.isoformat()
+
+
+def _listing_date_label(time_min: str) -> str:
+    parsed = datetime.fromisoformat(time_min.replace("Z", "+00:00"))
+    local_date = parsed.astimezone(ZoneInfo(_DEFAULT_TIMEZONE))
+    return (
+        f"{local_date.strftime('%A')} {local_date.date().isoformat()} "
+        f"({_DEFAULT_TIMEZONE})"
+    )
+
+
 @tool(
     name="get_current_uk_datetime",
     description=(
@@ -166,6 +212,72 @@ def resolve_uk_weekday(weekday: str, occurrence: str = "coming") -> str:
         f"{occurrence.title()} {weekday_name.title()} is "
         f"{resolved.isoformat()} ({resolved.strftime('%A')}) in "
         f"{_DEFAULT_TIMEZONE}. Current UK date is {current.date().isoformat()}."
+    )
+
+
+@tool(
+    name="resolve_uk_relative_date",
+    description=(
+        "Resolve a relative date phrase to an exact UK calendar date. "
+        "Supported phrases include today, tomorrow, day after tomorrow, "
+        "yesterday, coming Saturday, next Monday, and weekday names. "
+        "Always use this before writing a calendar event when its date is "
+        "not already an explicit ISO date. If the phrase is unsupported or "
+        "ambiguous, return an error and ask the user for an exact date."
+    ),
+)
+def resolve_uk_relative_date(date_phrase: str) -> str:
+    if not isinstance(date_phrase, str) or not date_phrase.strip():
+        return "Error: date_phrase must not be empty."
+
+    phrase = " ".join(date_phrase.lower().split())
+    current = datetime.now(ZoneInfo(_DEFAULT_TIMEZONE))
+    if phrase in {
+        "yesterday",
+        "today",
+        "tomorrow",
+        "day after tomorrow",
+    } or any(
+        separator in phrase for separator in ("/", "-")
+    ):
+        try:
+            resolved = _parse_calendar_date_phrase(phrase)
+        except ValueError as exc:
+            return f"Error: {exc}"
+        return (
+            f"'{date_phrase}' is {resolved.isoformat()} "
+            f"({resolved.strftime('%A')}) in {_DEFAULT_TIMEZONE}. "
+            f"Current UK date is {current.date().isoformat()}."
+        )
+
+    parts = phrase.split()
+    if len(parts) == 2 and parts[0] in {"coming", "next"}:
+        occurrence, weekday_name = parts
+    elif len(parts) == 1:
+        occurrence, weekday_name = "coming", parts[0]
+    else:
+        return (
+            "Error: unsupported relative date. Use today, tomorrow, "
+            "yesterday, day after tomorrow, or a weekday such as "
+            "'coming Saturday'. Ask the user for an exact date when the "
+            "requested date is ambiguous."
+        )
+    if weekday_name in {"week", "month"}:
+        return (
+            f"Error: '{date_phrase}' is ambiguous. Ask the user for an "
+            "exact date or date range."
+        )
+    if weekday_name not in _WEEKDAYS:
+        return f"Error: unsupported weekday '{weekday_name}'."
+
+    days_ahead = (_WEEKDAYS[weekday_name] - current.weekday()) % 7
+    if days_ahead == 0:
+        days_ahead = 7
+    resolved = current.date() + timedelta(days=days_ahead)
+    return (
+        f"'{date_phrase}' is {resolved.isoformat()} "
+        f"({resolved.strftime('%A')}) in {_DEFAULT_TIMEZONE}. "
+        f"Current UK date is {current.date().isoformat()}."
     )
 
 
@@ -304,8 +416,13 @@ def delete_google_calendar_event(event_id: str, calendar_id: str = "") -> str:
 @tool(
     name="list_google_calendar_events",
     description=(
-        "List upcoming Google Calendar events. Use this to find event IDs "
-        "before updating or deleting an event."
+        "List Google Calendar events. Use date_phrase='today' (or another "
+        "supported day or explicit date such as '21/09/2026') when the user "
+        "asks for events on a specific day; "
+        "results are then limited to that UK calendar day. Use this to find "
+        "event IDs before updating or deleting an event. Do not use an "
+        "ambiguous phrase such as 'coming week'; ask for an exact date or "
+        "date range instead."
     ),
 )
 def list_google_calendar_events(
@@ -313,11 +430,16 @@ def list_google_calendar_events(
     calendar_id: str = "",
     time_min: str = "",
     time_max: str = "",
+    date_phrase: str = "",
 ) -> str:
     try:
         count = int(max_results)
         if count < 1 or count > 250:
             raise ValueError("max_results must be between 1 and 250")
+        if date_phrase.strip() and (time_min.strip() or time_max.strip()):
+            raise ValueError("date_phrase cannot be combined with time_min or time_max")
+        if date_phrase.strip():
+            time_min, time_max = _listing_day_bounds(date_phrase)
         start_time = _listing_time(time_min, "time_min", default_now=True)
         end_time = _listing_time(time_max, "time_max")
         parameters = {
@@ -335,9 +457,10 @@ def list_google_calendar_events(
             access_token=_access_token(),
         )
         events = response.get("items", [])
+        date_label = _listing_date_label(start_time)
         if not events:
-            return "No upcoming Google Calendar events found."
-        lines = []
+            return f"No Google Calendar events found for {date_label}."
+        lines = [f"Google Calendar events for {date_label}:"]
         for event in events:
             start = event.get("start", {}).get(
                 "dateTime", event.get("start", {}).get("date", "unknown")

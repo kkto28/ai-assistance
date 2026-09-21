@@ -139,3 +139,10 @@ def test_system_prompt_explains_web_search_tools(agent):
     assert "use search_web for internet searches" in prompt
     assert "use open_web_page to read a specific public URL" in prompt
     assert "current or online information" in prompt
+
+
+def test_system_prompt_requires_clarification_for_ambiguous_dates(agent):
+    prompt = agent._system_prompt()
+
+    assert 'such as "coming week" or "next week"' in prompt
+    assert "ask the user for the exact date or date range" in prompt

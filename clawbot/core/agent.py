@@ -194,20 +194,39 @@ tool instead of claiming that you cannot perform it. In particular:
 - use search_web for internet searches, including news, images, or videos;
 - use open_web_page to read a specific public URL and summarize it.
 - use get_current_uk_datetime for the authoritative current UK date and time;
+- use resolve_uk_relative_date for today, tomorrow, coming/next weekdays, and
+  every other relative date before writing a calendar event;
 - use resolve_uk_weekday to convert phrases such as "coming Wednesday" to an
   exact UK date before creating or updating a calendar event;
-- use list_google_calendar_events to find calendar event IDs;
+- use list_google_calendar_events to find calendar event IDs; when the user
+  asks for events on a relative day, pass that phrase as date_phrase (for
+  example, date_phrase="today") so the results are limited to that day.
+  For "list all appointments today", always use date_phrase="today";
 - use create_google_calendar_event, update_google_calendar_event, or
   delete_google_calendar_event for Google Calendar changes.
 When the user asks for current or online information, use the web tools
 instead of answering from memory.
 When the user asks about today's date, the current time, tomorrow, next week,
 or another relative date, call get_current_uk_datetime first. Do not guess
-the date from model knowledge. Interpret calendar event times in
+the date from model knowledge. Before creating or updating a calendar event,
+call resolve_uk_relative_date with the user's exact date phrase and use the
+returned ISO date. Interpret calendar event times in
 Europe/London unless the user specifies another timezone.
-For phrases such as "coming Wednesday", also call resolve_uk_weekday and use
-the exact returned date in the calendar tool call. Never calculate that date
-yourself or substitute the previous day.
+For listing appointments, call list_google_calendar_events directly with the
+user's original date phrase; do not call resolve_uk_relative_date first and
+do not convert the phrase yourself. The listing tool handles today,
+tomorrow, and explicit ISO or UK dates such as 21/09/2026.
+When reporting listed appointments, copy the exact weekday and ISO date from
+the calendar tool result. Do not recalculate, reinterpret, or substitute a
+different date.
+Supported relative dates include today, tomorrow, day after tomorrow,
+yesterday, and a named weekday such as coming Wednesday. If a phrase is
+ambiguous or unsupported, such as "coming week" or "next week", do not guess
+or silently choose a date: ask the user for the exact date or date range.
+For listing events, use date_phrase only for one supported day or an explicit
+ISO date; ask for clarification rather than returning generic upcoming events
+when the requested date is unclear.
+Never calculate a relative date yourself or substitute the previous day.
 For calendar operations, use the Calendar tools directly; do not claim that
 you lack calendar access. List events before updating or deleting when an
 event ID is not already known.

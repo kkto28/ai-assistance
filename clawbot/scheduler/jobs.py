@@ -42,7 +42,7 @@ def send_telegram_message(message: str) -> None:
 def morning_briefing() -> str:
     reply = _get_agent().handle_message(
         channel="scheduled",
-        user_text="Just tell me the weather today in Glasgow 2648579",
+        user_text="Tell me the weather today in Glasgow 2648579; tell me top 3 financial news today; list all appointments today.",
         approve_fn=lambda name, inp: True,
     )
     print(f"[scheduled] {reply}")
@@ -79,11 +79,11 @@ def schedule_interval_job(
 
 
 def start():
-    scheduler.add_job(morning_briefing, "cron", hour=9, minute=0)
+    scheduler.add_job(morning_briefing, "cron", hour=9, minute=00)
     scheduler.add_job(clear_all_history, "cron", hour=1, minute=0)
     scheduler.start()
     print(
-        "Scheduler started. Jobs: morning_briefing @ 08:00, "
+        "Scheduler started. Jobs: morning_briefing @ 09:00, "
         "clear_all_history @ 01:00. "
         "Use schedule_interval_job(..., hours=1) for hourly jobs."
     )

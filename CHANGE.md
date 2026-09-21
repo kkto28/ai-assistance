@@ -61,6 +61,10 @@ it in prose.
 - Git now ignores untracked `run_*.sh` launcher scripts
 
 ### Fixed
+- Calendar appointment listings now use exact UK-local day bounds for relative
+  and explicit dates, report the authoritative weekday/date, and reject
+  ambiguous date requests; coverage is in
+  `tests/test_google_calendar_skill.py` and `tests/test_agent_loop.py`
 - Telegram proactive messages now always use the configured
   `TELEGRAM_CHAT_ID` instead of accepting a model-supplied destination
 - Ollama refusal responses are retried with an explicit tool-call instruction
