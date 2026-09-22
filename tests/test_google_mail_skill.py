@@ -31,10 +31,29 @@ def test_inspect_mail_reports_selected_categories_and_message_metadata(monkeypat
 
     result = google_mail_skill.inspect_google_mail("promotions", "5")
 
-    assert "Promotions: 1 message(s)" in result
-    assert "ID: message-1 | Sale | shop@example.com" in result
+    assert "Promotions: 1 found" in result
+    assert "Promotions 1. Sale" in result
+    assert "From: shop@example.com" in result
+    assert "Message ID: message-1" in result
     assert "No messages were changed." in result
     assert "CATEGORY_PROMOTIONS" in requests[0].full_url
+
+
+def test_inspect_mail_defaults_to_twenty_results(monkeypatch):
+    requests = []
+    monkeypatch.setattr(google_mail_skill, "_access_token", lambda: "token")
+    monkeypatch.setattr(
+        google_mail_skill,
+        "_list_messages",
+        lambda label_id, max_results, access_token: (
+            requests.append((label_id, max_results, access_token)) or []
+        ),
+    )
+
+    result = google_mail_skill.inspect_google_mail("spam")
+
+    assert "Limit: 20 messages per category" in result
+    assert requests == [("SPAM", 20, "token")]
 
 
 def test_cleanup_requires_explicit_confirmation(monkeypatch):
@@ -82,3 +101,37 @@ def test_inspection_is_not_registered_as_dangerous():
     from skills import registry
 
     assert registry.get("inspect_google_mail").dangerous is False
+
+
+def test_access_token_is_only_used_when_refresh_credentials_are_unavailable(
+    monkeypatch,
+):
+    monkeypatch.setattr(google_mail_skill.config, "google_mail_access_token", "access")
+    monkeypatch.setattr(google_mail_skill.config, "google_mail_refresh_token", "")
+    monkeypatch.setattr(google_mail_skill.config, "google_mail_client_id", "")
+    monkeypatch.setattr(google_mail_skill.config, "google_mail_client_secret", "")
+
+    assert google_mail_skill._access_token() == "access"
+
+
+def test_refresh_credentials_take_precedence_over_stale_access_token(
+    monkeypatch,
+):
+    requests = []
+    monkeypatch.setattr(google_mail_skill.config, "google_mail_access_token", "stale")
+    monkeypatch.setattr(
+        google_mail_skill.config, "google_mail_refresh_token", "refresh"
+    )
+    monkeypatch.setattr(google_mail_skill.config, "google_mail_client_id", "client")
+    monkeypatch.setattr(
+        google_mail_skill.config, "google_mail_client_secret", "secret"
+    )
+
+    def fake_urlopen(request, timeout):
+        requests.append(request)
+        return BytesIO(b'{"access_token": "fresh"}')
+
+    monkeypatch.setattr(google_mail_skill, "urlopen", fake_urlopen)
+
+    assert google_mail_skill._access_token() == "fresh"
+    assert requests[0].full_url == "https://oauth2.googleapis.com/token"

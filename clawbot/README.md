@@ -118,7 +118,10 @@ Delete event EVENT_ID.
 ## Google Mail
 
 The Mail skill can inspect Spam, Promotions, and Social without changing
-anything. Cleanup moves only selected messages to recoverable Gmail Trash.
+anything. Inspection returns up to 20 messages per category by default,
+grouped with sender, date, subject, and exact Message ID fields so candidates
+are easy to review. Cleanup moves only selected messages to recoverable Gmail
+Trash.
 Configure OAuth with the Gmail scope
 `https://www.googleapis.com/auth/gmail.modify`:
 

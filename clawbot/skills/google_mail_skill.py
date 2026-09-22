@@ -43,15 +43,17 @@ def _request(
 
 
 def _access_token() -> str:
-    if config.google_mail_access_token:
+    has_refresh_credentials = all(
+        (
+            config.google_mail_refresh_token,
+            config.google_mail_client_id,
+            config.google_mail_client_secret,
+        )
+    )
+    if not has_refresh_credentials and config.google_mail_access_token:
         print("Using existing Google OAuth access token...")
         return config.google_mail_access_token
-    if not (
-        config.google_mail_refresh_token
-        and config.google_mail_client_id
-        and config.google_mail_client_secret
-    ):
-        print("Google Mail credentials are not configured.")
+    if not has_refresh_credentials:
         raise ValueError(
             "Google Mail credentials are not configured. Set "
             "GOOGLE_MAIL_ACCESS_TOKEN or the refresh-token settings."
@@ -148,15 +150,19 @@ def _message_summary(message_id: str, access_token: str) -> dict:
         "Return counts and message IDs for review before any separate cleanup."
     ),
 )
-def inspect_google_mail(categories: str = "spam,promotions,social", max_results: str = "10") -> str:
+def inspect_google_mail(categories: str = "spam,promotions,social", max_results: str = "20") -> str:
     try:
         count = int(max_results)
         if count < 1 or count > 100:
             raise ValueError("max_results must be between 1 and 100")
         selected = _parse_categories(categories)
-        print(f"Inspecting Google Mail categories: {', '.join(selected)} (max {count} messages each)...")
+        print(
+            f"Inspecting Google Mail categories: {', '.join(selected)} "
+            f"(max {count} messages each)..."
+        )
         token = _access_token()
-        lines = ["Google Mail review (read-only):"]
+        category_counts = []
+        review_items = []
         for category in selected:
             messages = _list_messages(_MAILBOX_LABELS[category], count, token)
             summaries = [
@@ -164,15 +170,39 @@ def inspect_google_mail(categories: str = "spam,promotions,social", max_results:
                 for message in messages
                 if message.get("id")
             ]
-            lines.append(f"\n{category.title()}: {len(summaries)} message(s)")
-            for message in summaries:
-                lines.append(
-                    f"- ID: {message['id']} | {message['subject']} | "
-                    f"{message['from'] or '(unknown sender)'} | {message['date'] or '(no date)'}"
+            category_counts.append((category.title(), len(summaries)))
+            for index, message in enumerate(summaries, start=1):
+                review_items.append(
+                    f"{category.title()} {index}. {message['subject']}\n"
+                    f"   From: {message['from'] or '(unknown sender)'}\n"
+                    f"   Date: {message['date'] or '(no date)'}\n"
+                    f"   Message ID: {message['id']}"
                 )
-        lines.append(
-            "\nNo messages were changed. Review the IDs and explicitly approve "
-            "a trash cleanup before using cleanup_google_mail."
+
+        total = sum(count for _, count in category_counts)
+        lines = [
+            "Google Mail review (read-only)",
+            f"Categories: {', '.join(selected)}",
+            f"Limit: {count} messages per category",
+            "",
+            "Summary:",
+            *[
+                f"- {category}: {message_count} found"
+                for category, message_count in category_counts
+            ],
+            f"- Total: {total} message(s)",
+            "",
+            "Review candidates:",
+        ]
+        lines.extend(review_items or ["- No messages found in the selected categories."])
+        lines.extend(
+            [
+                "",
+                "Next actions:",
+                "- No messages were changed.",
+                "- To clean up, provide the exact Message ID values to move to "
+                "Trash and confirm with APPROVE.",
+            ]
         )
         return "\n".join(lines)
     except (HTTPError, URLError, OSError, ValueError, TimeoutError) as exc:
