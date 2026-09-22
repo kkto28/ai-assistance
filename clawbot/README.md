@@ -189,6 +189,24 @@ Event times without an explicit timezone use `Europe/London`. Listing events
 defaults to events from the current time onward in UK time. You can provide
 `time_min` and `time_max` when a specific listing range is needed.
 
+## Google Mail
+
+The Google Mail skill reviews messages in Spam, Promotions, and Social without
+changing them, then can move explicitly selected messages to Gmail Trash. Set
+OAuth credentials with the Gmail scope
+`https://www.googleapis.com/auth/gmail.modify`:
+
+```bash
+export GOOGLE_MAIL_CLIENT_ID=your-client-id
+export GOOGLE_MAIL_CLIENT_SECRET=your-client-secret
+export GOOGLE_MAIL_REFRESH_TOKEN=your-refresh-token
+```
+
+`GOOGLE_MAIL_ACCESS_TOKEN` may be used for short-lived/testing setups. Ask Rose
+to inspect mail first. Cleanup requires selecting exact message IDs, the
+normal dangerous-tool approval prompt, and the literal confirmation
+`APPROVE`. Messages are moved to Trash rather than permanently deleted.
+
 Jobs can also run on a repeating interval. Register the callable before
 starting the scheduler; this example runs it every hour:
 

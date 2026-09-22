@@ -2,6 +2,11 @@
 set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+
+if [ -f "$SCRIPT_DIR/set_env.sh" ]; then
+    . "$SCRIPT_DIR/set_env.sh"
+fi
+
 PID_FILE="$SCRIPT_DIR/../scheduler.pid"
 LOG_FILE="$SCRIPT_DIR/../scheduler.log"
 PYTHON="${PYTHON:-$SCRIPT_DIR/../venv/bin/python}"

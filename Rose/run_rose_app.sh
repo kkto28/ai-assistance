@@ -4,6 +4,11 @@ set -eu
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 APP_PATH="$SCRIPT_DIR/Rose.app"
 
+if [ -f "$SCRIPT_DIR/../clawbot/set_env.sh" ]; then
+  # Load local credentials before the native app starts its Python backend.
+  . "$SCRIPT_DIR/../clawbot/set_env.sh"
+fi
+
 rm -rf "$APP_PATH"
 mkdir -p "$APP_PATH/Contents/MacOS"
 

@@ -12,6 +12,8 @@ it in prose.
 - `4010669` (`feat(weather): add BBC weather location tools`)
 
 ### Added
+- Google Mail skill for read-only Spam, Promotions, and Social review plus
+  explicit-ID, approval-gated moves to recoverable Trash
 - Google Calendar skill with OAuth authentication, event listing, creation,
   updates, deletion, UK date/time resolution, and relative weekday handling
 - LaunchDaemon setup instructions for keeping Ollama running after logout
@@ -35,6 +37,10 @@ it in prose.
   `clawbot/run_telegram.sh`
 
 ### Changed
+- Rose and Clawbot launchers now source the local environment file before
+  starting services, so Google Calendar and Mail credentials are available
+- Google Mail inspection is read-only and does not require approval; only
+  explicit message cleanup remains approval-gated
 - Calendar mutation tools now run without the dangerous-tool approval prompt
 - Calendar event times and relative date resolution default to `Europe/London`
 - Rose and CLI agent prompts now explicitly route current or online-information
@@ -61,6 +67,7 @@ it in prose.
 - Git now ignores untracked `run_*.sh` launcher scripts
 
 ### Fixed
+- Google Calendar and Mail API requests now send the loaded OAuth bearer token
 - Calendar appointment listings now use exact UK-local day bounds for relative
   and explicit dates, report the authoritative weekday/date, and reject
   ambiguous date requests; coverage is in

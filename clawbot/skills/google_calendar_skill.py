@@ -38,7 +38,7 @@ def _request(
         data=data,
         headers={
             "Accept": "application/json",
-            "Authorization": f"Bearer {access_token}",
+            "Authorization": "Bearer " + access_token,
             "Content-Type": "application/json",
             "User-Agent": "Clawbot Google Calendar skill",
         },

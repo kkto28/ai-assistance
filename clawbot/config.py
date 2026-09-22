@@ -43,6 +43,12 @@ class Config:
         "GOOGLE_CALENDAR_DEFAULT_CALENDAR", "primary"
     )
 
+    # --- Google Mail ---
+    google_mail_access_token: str = os.getenv("GOOGLE_MAIL_ACCESS_TOKEN", "")
+    google_mail_refresh_token: str = os.getenv("GOOGLE_MAIL_REFRESH_TOKEN", "")
+    google_mail_client_id: str = os.getenv("GOOGLE_MAIL_CLIENT_ID", "")
+    google_mail_client_secret: str = os.getenv("GOOGLE_MAIL_CLIENT_SECRET", "")
+
     # --- Skills ---
     # Skill modules to load at startup. Add your own module names here.
     enabled_skills: list = field(default_factory=lambda: [
@@ -53,6 +59,7 @@ class Config:
         "skills.telegram_skill",
         "skills.web_search_skill",
         "skills.google_calendar_skill",
+        "skills.google_mail_skill",
     ])
 
 
