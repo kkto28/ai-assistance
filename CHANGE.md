@@ -37,6 +37,8 @@ it in prose.
   `clawbot/run_telegram.sh`
 
 ### Changed
+- Root, Clawbot, and Rose README files now provide clearer setup, launcher,
+  configuration, integration, safety, and architecture guidance
 - Rose and Clawbot launchers now source the local environment file before
   starting services, so Google Calendar and Mail credentials are available
 - Google Mail inspection is read-only and does not require approval; only

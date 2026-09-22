@@ -1,70 +1,73 @@
-# Rose React desktop interface
+# Rose desktop interface
 
-Rose is a React chat interface served by a small Python server. This is the
-only Rose desktop interface; its Python backend imports and calls the agent
-under `clawbot/` and uses the same Ollama/provider configuration as the rest
-of the project.
+Rose is a small React/WebKit chat interface backed by `Rose/server.py`.
+The backend uses the same Clawbot configuration, skills, model provider, and
+approval rules as the terminal client.
 
-## Run
+## Start Rose
 
 From the repository root:
 
 ```bash
-python Rose/server.py
-```
+# Browser version
+./Rose/run_rose.sh
+open http://127.0.0.1:8765
 
-Open <http://127.0.0.1:8765> in your browser. The server prints the URL and
-stops with `Ctrl+C`.
-
-If you start Rose again while it is already running, the second process now
-detects the existing Rose server and exits cleanly. To find and stop a
-different process using the port:
-
-```bash
-lsof -nP -iTCP:8765 -sTCP:LISTEN
-kill <PID>
-```
-
-For a native macOS window instead of a browser tab:
-
-```bash
+# Native macOS window
 ./Rose/run_rose_app.sh
 ```
 
-This compiles and launches a small AppKit/WebKit wrapper. It starts
-`Rose/server.py` in the background, displays the React interface in the app
-window, and stops the backend when the window closes.
+Both launchers load `clawbot/set_env.sh` automatically when that file exists.
+The browser/server launcher prefers `venv/bin/python`.
 
-The native app sets its Dock icon from `Rose/assets/Rose.png` when it starts,
-so replacing that image also updates the app icon.
+Rose serves the local API and UI at `127.0.0.1:8765`. Check whether it is
+ready with:
 
-For Ollama:
+```bash
+curl http://127.0.0.1:8765/api/health
+```
+
+To stop the server:
+
+```bash
+kill "$(lsof -tiTCP:8765 -sTCP:LISTEN)"
+```
+
+If the port is already in use, inspect the process before stopping it:
+
+```bash
+lsof -nP -iTCP:8765 -sTCP:LISTEN
+```
+
+## Configuration
+
+Set the model provider before starting Rose:
 
 ```bash
 export CLAWBOT_MODEL_PROVIDER=ollama
 export CLAWBOT_MODEL_NAME=qwen3:8b
 export OLLAMA_HOST=http://localhost:11434
-python Rose/server.py
 ```
 
-The frontend uses React and Babel from a CDN, so the current zero-build setup
-does not require Node or npm. An internet connection is needed to load the
-React browser scripts. The Python backend itself uses only the standard
-library plus the project's existing Clawbot dependencies.
+For OpenAI, use `CLAWBOT_MODEL_PROVIDER=openai` and set `OPENAI_API_KEY`.
+The backend reads configuration when it starts, so restart Rose after changing
+environment variables, enabled skills, or dependencies.
 
-Use `./Rose/run_rose.sh` when starting Rose from a terminal; it prefers the
-repository `venv`, matching the CLI dependency environment.
+## Safety and permissions
 
-Replace the Rose photo by replacing `Rose/assets/Rose.png`. The dashboard is
-an extension area for future widgets, notes, metrics, and shortcuts.
+Dangerous tools are controlled by `CLAWBOT_AUTO_APPROVE`, which defaults to
+`false`. Rose shows an approval control before running shell commands, writing
+files, or moving selected Gmail messages to Trash.
 
-Dangerous Clawbot tools remain protected by `CLAWBOT_AUTO_APPROVE`. With the
-default `false` setting, Rose pauses the chat and shows an Approve/Deny card
-in the sidebar and above the conversation.
+Read-only operations such as listing calendar events and inspecting Gmail do
+not require approval. Gmail cleanup still requires explicit message IDs and
+the literal confirmation `APPROVE`.
 
-Ollama tool-capable models are configured to use actual tool calls for action
-requests rather than only describing what they would do.
+## Implementation notes
 
-For current online information, Rose uses the `search_web` and
-`open_web_page` tools from the shared Clawbot configuration. Restart Rose after
-changing enabled skills or dependencies so the backend reloads them.
+- `Rose/server.py` provides the HTTP API and serves the web interface.
+- `Rose/RoseApp.swift` wraps the interface in a native macOS window.
+- The frontend uses React and Babel from a CDN; no Node or npm build is
+  required.
+- An internet connection is required for the CDN-hosted frontend scripts.
+- Replace `Rose/assets/Rose.png` to change the Dock icon.

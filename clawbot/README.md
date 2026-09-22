@@ -1,199 +1,125 @@
-# Clawbot (Python scaffold)
+# Clawbot
 
-A modular, from-scratch personal agent: one reasoning loop, a pluggable
-skill system, thin channel adapters, and local SQLite memory.
+Clawbot is Rose's Python agent runtime. It combines:
 
-## Structure
-
-```
-clawbot/
-  core/agent.py          # the reasoning loop (LLM <-> tool calling)
-  skills/                # one file per capability, auto-discovered
-    __init__.py           # registry + @tool decorator
-    shell_skill.py         # run_shell
-    file_skill.py          # read_file, write_file, list_files (sandboxed)
-    memory_skill.py        # remember, recall
-  channels/               # transport only -- no agent logic
-    cli_channel.py
-    telegram_channel.py
-  memory/db.py            # SQLite: conversation history + notes
-  scheduler/jobs.py       # APScheduler: proactive/scheduled messages
-  config.py               # all settings, via environment variables
-  main.py                 # entry point
-```
-
-**Why it's modular:** `core/agent.py` only knows about `skills.registry`
-and `memory.db.Memory` -- it never imports a specific skill or channel.
-Adding a capability = adding a file to `skills/` with an `@tool(...)`
-decorated function. Adding a platform = adding a file to `channels/`
-that calls `Agent.handle_message()`. Nothing else changes.
+- one tool-calling reasoning loop;
+- pluggable skills registered with `@tool`;
+- CLI, Telegram, scheduler, and Rose channels;
+- local SQLite conversation history and notes.
 
 ## Quickstart
 
-```bash
-python3 -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
+From the repository root:
 
-export ANTHROPIC_API_KEY=sk-ant-...
-python main.py cli
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 ```
 
-Dangerous tools (`run_shell`, `write_file`) will ask for approval in the
-terminal before running, unless you set `CLAWBOT_AUTO_APPROVE=true`.
-
-To use a local Ollama model with the same tool-calling loop:
+Set a model provider:
 
 ```bash
+# OpenAI
+export CLAWBOT_MODEL_PROVIDER=openai
+export OPENAI_API_KEY=your-key
+
+# Or Ollama
 brew install ollama
 brew services start ollama
 ollama pull qwen3:8b
 export CLAWBOT_MODEL_PROVIDER=ollama
 export CLAWBOT_MODEL_NAME=qwen3:8b
 export OLLAMA_HOST=http://localhost:11434
-python main.py cli
 ```
 
-The Ollama model must support tool calling. The agent sends tool results
-back to Ollama and continues the loop until the model returns final text.
-
-To keep Ollama running after logout, install it as a system LaunchDaemon:
+Start a terminal session:
 
 ```bash
-sudo tee /Library/LaunchDaemons/com.ollama.serve.plist > /dev/null <<'EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
-  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>Label</key>
-  <string>com.ollama.serve</string>
-
-  <key>UserName</key>
-  <string>tok13</string>
-
-  <key>WorkingDirectory</key>
-  <string>/Users/tok13</string>
-
-  <key>ProgramArguments</key>
-  <array>
-    <string>/opt/homebrew/bin/ollama</string>
-    <string>serve</string>
-  </array>
-
-  <key>EnvironmentVariables</key>
-  <dict>
-    <key>HOME</key>
-    <string>/Users/tok13</string>
-    <key>PATH</key>
-    <string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
-    <key>OLLAMA_MODELS</key>
-    <string>/Users/tok13/.ollama/models</string>
-  </dict>
-
-  <key>RunAtLoad</key>
-  <true/>
-
-  <key>KeepAlive</key>
-  <true/>
-
-  <key>StandardOutPath</key>
-  <string>/Users/tok13/Library/Logs/ollama.log</string>
-
-  <key>StandardErrorPath</key>
-  <string>/Users/tok13/Library/Logs/ollama-error.log</string>
-</dict>
-</plist>
-EOF
-
-sudo chown root:wheel /Library/LaunchDaemons/com.ollama.serve.plist
-sudo chmod 644 /Library/LaunchDaemons/com.ollama.serve.plist
-
-sudo mkdir -p /Users/tok13/Library/Logs
-sudo chown -R tok13:staff /Users/tok13/Library/Logs
-
-sudo launchctl bootout system/com.ollama.serve 2>/dev/null || true
-sudo plutil -lint /Library/LaunchDaemons/com.ollama.serve.plist
-sudo launchctl bootstrap system /Library/LaunchDaemons/com.ollama.serve.plist
-sudo launchctl kickstart -k system/com.ollama.serve
-
-sudo launchctl print system/com.ollama.serve | grep -E 'state =|pid =|last exit code|runs ='
-curl http://127.0.0.1:11434/api/tags
-
+./clawbot/run_cli.sh
 ```
 
-For a per-user Homebrew service instead:
+The launcher uses the repository virtual environment when available and
+automatically sources `clawbot/set_env.sh` if present.
+
+## Launchers
+
+Run these from the repository root:
+
+| Launcher | Purpose | Logs / state |
+| --- | --- | --- |
+| `./clawbot/run_cli.sh` | Interactive terminal chat | — |
+| `./clawbot/run_job.sh` | Background scheduled jobs | `scheduler.log`, `scheduler.pid` |
+| `./clawbot/run_telegram.sh` | Background Telegram bot | `telegram.log`, `telegram.pid` |
+| `./Rose/run_rose.sh` | Browser UI backend | Port `8765` |
+| `./Rose/run_rose_app.sh` | Native macOS UI | Port `8765` |
+
+Stop a background job with its PID file:
 
 ```bash
-brew services start ollama    # start Ollama in the background
-brew services stop ollama     # stop Ollama
-brew services restart ollama  # restart Ollama
-brew services list             # check service status
-tail -f /opt/homebrew/var/log/ollama.log  # follow Ollama logs
+kill "$(cat scheduler.pid)"
+rm scheduler.pid
 ```
 
-If you installed Ollama without Homebrew, run it directly instead:
+Use the equivalent `telegram.pid` file for the Telegram bot. Stop Rose with:
 
 ```bash
-ollama serve
+kill "$(lsof -tiTCP:8765 -sTCP:LISTEN)"
 ```
 
-## Running scheduled jobs
+## Environment variables
 
-The scheduler currently runs `morning_briefing` every day at **09:00** in
-the machine's local timezone. Run it from the `clawbot/` directory:
+The launchers source `clawbot/set_env.sh` automatically. This file is ignored
+by Git and should contain local secrets only. Do not commit or paste its
+contents.
 
-```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-python -m scheduler.jobs
-```
+Common settings:
 
-To send the briefing to Telegram as well as printing it locally, configure
-the bot token and destination chat ID before starting the scheduler:
+| Variable | Purpose |
+| --- | --- |
+| `CLAWBOT_MODEL_PROVIDER` | `ollama`, `openai`, or `anthropic` |
+| `CLAWBOT_MODEL_NAME` | Model name, such as `qwen3:8b` |
+| `OLLAMA_HOST` | Ollama server URL |
+| `OPENAI_API_KEY` | OpenAI credential |
+| `ANTHROPIC_API_KEY` | Anthropic credential |
+| `CLAWBOT_AUTO_APPROVE` | Set to `true` to bypass dangerous-tool approval |
+| `CLAWBOT_WORKSPACE` | Root directory used by file tools |
+| `CLAWBOT_DB_PATH` | SQLite database path |
 
-```bash
-export TELEGRAM_BOT_TOKEN=123456:your-bot-token
-export TELEGRAM_CHAT_ID=123456789
-python -m scheduler.jobs
-```
-
-`TELEGRAM_CHAT_ID` is the chat or group where scheduled messages should be
-delivered. If either Telegram variable is missing, the job remains
-local-only. Keep the process running for APScheduler to trigger the job.
+Configuration is loaded when the process starts. Restart the relevant launcher
+after changing environment variables.
 
 ## Google Calendar
 
-The Google Calendar skill can list, create, update, and delete events. Enable
-the Google Calendar API in a Google Cloud project, create OAuth credentials for
-a desktop application, and obtain a refresh token with the
-`https://www.googleapis.com/auth/calendar` scope. Then configure:
+The Calendar skill can list, create, update, and delete events. Configure a
+Google OAuth desktop application with the Calendar scope
+`https://www.googleapis.com/auth/calendar`:
 
 ```bash
 export GOOGLE_CALENDAR_CLIENT_ID=your-client-id
 export GOOGLE_CALENDAR_CLIENT_SECRET=your-client-secret
 export GOOGLE_CALENDAR_REFRESH_TOKEN=your-refresh-token
-export GOOGLE_CALENDAR_DEFAULT_CALENDAR=primary  # optional
+export GOOGLE_CALENDAR_DEFAULT_CALENDAR=primary
 ```
 
-The skill refreshes the access token automatically. For short-lived/testing
-setups, `GOOGLE_CALENDAR_ACCESS_TOKEN` can be used instead. Ask Rose to list
-events first when you need an event ID to update or delete:
+The refresh token is preferred because it can obtain new access tokens
+automatically. `GOOGLE_CALENDAR_ACCESS_TOKEN` is available for short-lived
+testing. Event times default to `Europe/London`.
+
+Example requests:
 
 ```text
-Create a dentist appointment on 2026-09-25 at 10:00 to 11:00.
-List my upcoming calendar events.
-Update event EVENT_ID to start at 11:00 and end at 12:00 on 2026-09-25.
-Delete event EVENT_ID from my calendar.
+List my calendar events for today.
+Create a dentist appointment on 2026-09-25 from 10:00 to 11:00.
+Update event EVENT_ID on 2026-09-25 to run from 11:00 to 12:00.
+Delete event EVENT_ID.
 ```
-
-Event times without an explicit timezone use `Europe/London`. Listing events
-defaults to events from the current time onward in UK time. You can provide
-`time_min` and `time_max` when a specific listing range is needed.
 
 ## Google Mail
 
-The Google Mail skill reviews messages in Spam, Promotions, and Social without
-changing them, then can move explicitly selected messages to Gmail Trash. Set
-OAuth credentials with the Gmail scope
+The Mail skill can inspect Spam, Promotions, and Social without changing
+anything. Cleanup moves only selected messages to recoverable Gmail Trash.
+Configure OAuth with the Gmail scope
 `https://www.googleapis.com/auth/gmail.modify`:
 
 ```bash
@@ -202,13 +128,35 @@ export GOOGLE_MAIL_CLIENT_SECRET=your-client-secret
 export GOOGLE_MAIL_REFRESH_TOKEN=your-refresh-token
 ```
 
-`GOOGLE_MAIL_ACCESS_TOKEN` may be used for short-lived/testing setups. Ask Rose
-to inspect mail first. Cleanup requires selecting exact message IDs, the
-normal dangerous-tool approval prompt, and the literal confirmation
-`APPROVE`. Messages are moved to Trash rather than permanently deleted.
+`GOOGLE_MAIL_ACCESS_TOKEN` can be used for short-lived testing. Ask Rose to
+inspect mail first. Inspection is read-only and does not require approval.
+Cleanup requires:
 
-Jobs can also run on a repeating interval. Register the callable before
-starting the scheduler; this example runs it every hour:
+1. a review of the messages and their exact IDs;
+2. explicit selection of the IDs to move;
+3. the normal dangerous-tool approval; and
+4. the literal confirmation `APPROVE`.
+
+Messages are moved to Trash, not permanently deleted.
+
+## Scheduler and Telegram
+
+The default `morning_briefing` job runs daily at 09:00 in the machine's local
+timezone:
+
+```bash
+./clawbot/run_job.sh
+```
+
+Telegram delivery also requires:
+
+```bash
+export TELEGRAM_BOT_TOKEN=your-bot-token
+export TELEGRAM_CHAT_ID=your-chat-id
+./clawbot/run_telegram.sh
+```
+
+The scheduler can also run interval jobs from Python:
 
 ```python
 from scheduler import jobs
@@ -221,87 +169,40 @@ jobs.schedule_interval_job(
 jobs.start()
 ```
 
-Use `minutes` or `seconds` instead of `hours` for shorter intervals. At least
-one interval value must be greater than zero.
+## Web search
 
-The agent can also send a proactive Telegram message with the
-`send_telegram_message` skill. Configure the same variables, then ask Rose
-to send a message. The skill always uses the configured `TELEGRAM_CHAT_ID`:
-Telegram delivery does not require the dangerous-tool approval prompt; shell
-and file mutation tools remain protected.
-
-```text
-Send me a Telegram message saying "The backup finished."
-```
-
-The web search skill provides read-only internet access and DuckDuckGo text, news,
-image, and video search:
+The web skill provides read-only DuckDuckGo text, news, image, and video
+search, plus page extraction:
 
 ```text
 Search the web for the latest Ollama tool-calling documentation.
 Open https://ollama.com/blog/tool-support and summarize it.
 ```
 
-Use `search_type` as `text` (default), `news`, `images`, or `videos` when a
-specific result type is needed.
-`open_web_page` includes a short `TL;DR` followed by the extracted page text.
-The TL;DR uses the configured model provider and falls back to a local
-extractive summary if the model is unavailable.
+Use `search_type` values `text`, `news`, `images`, or `videos` when calling the
+search tool directly.
 
-To run the scheduler in the background:
+## Project structure
 
-```bash
-./run_job.sh
+```text
+clawbot/
+  core/agent.py       Agent loop, prompts, tool execution, approvals
+  skills/             Registered tools and integrations
+  channels/           CLI and Telegram adapters
+  memory/db.py        SQLite history and notes
+  scheduler/jobs.py   Scheduled and interval jobs
+  config.py           Environment-backed configuration
+  main.py             CLI entry point
 ```
 
-The launcher writes the process ID to `../scheduler.pid` and output to
-`../scheduler.log`. To stop the background scheduler:
+Adding a skill means creating a module under `skills/` with an `@tool`
+function, then adding its module path to `enabled_skills` in `config.py`.
+Adding a channel means calling `Agent.handle_message()` from a transport
+adapter.
 
-```bash
-kill "$(cat ../scheduler.pid)"
-rm ../scheduler.pid
-```
+## Security
 
-## Adding a skill
-
-Create `skills/your_skill.py`:
-
-```python
-from skills import tool
-
-@tool(name="your_tool", description="What it does, for the LLM.")
-def your_tool(some_arg: str) -> str:
-    return f"did something with {some_arg}"
-```
-
-Then add `"skills.your_skill"` to `enabled_skills` in `config.py`.
-That's the whole integration -- no registry wiring, no changes to
-`core/agent.py`.
-
-## Adding a channel
-
-Copy `channels/cli_channel.py` as a template. A channel's only job is:
-receive a platform message -> call `agent.handle_message(channel, text)`
--> send the reply back on that platform.
-
-## Where to go from here
-
-- **Approval UI per channel**: `telegram_channel.py` currently
-  auto-approves dangerous tools. Wire up an inline Approve/Deny keyboard
-  instead of the CLI's `input()` prompt.
-- **Swap the reasoning loop for LangGraph** if you need branching logic,
-  multi-step plans with checkpointing, or parallel sub-agents. Only
-  `core/agent.py` would change -- skills and channels are untouched.
-- **Multi-agent**: if one skill library gets unwieldy (e.g. "research"
-  vs "scheduling" vs "coding" all fighting for context), split into
-  role-based agents (see CrewAI) that hand off to each other.
-- **Harden the sandbox**: `file_skill.py`'s workspace jail and
-  `run_shell`'s 30s timeout are minimal. For anything beyond personal,
-  trusted use, run the whole process in a container/VM and add a
-  command allowlist.
-
-## Security note
-
-This gives an LLM the ability to run real shell commands and write real
-files. Keep approval mode on until you trust your setup, and don't
-point `CLAWBOT_WORKSPACE` at anything you're not willing to lose.
+Clawbot can run shell commands, write files, access Google services, and send
+Telegram messages. Keep approval mode enabled until the setup is trusted.
+Use a workspace directory that can safely be modified, rotate credentials if
+they are exposed, and never commit `set_env.sh`.
