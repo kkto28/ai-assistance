@@ -2,7 +2,7 @@
 
 A TDD, incrementally-shipped build plan for the scaffold. Each phase
 produces a working, tested slice of the system — never a half-built
-mess. Pair this with `CHANGES.md` (template included below) to track
+mess. Pair this with `CHANGE.md` (the project changelog) to track
 what actually happened vs. what was planned.
 
 ## Principles
@@ -132,13 +132,13 @@ define the contract.
 Pick **one** new capability (e.g. a `weather_skill.py` calling a public
 API, or a `browser_skill.py` with Playwright) and build it test-first:
 
-1. Write the test for the tool function against a mocked HTTP
-   response/browser action.
+1. Write tests for the tool function against a mocked HTTP response or
+   browser action.
 2. Implement the skill.
 3. Add it to `enabled_skills` in `config.py`.
 4. Manually run `python main.py cli` and exercise it once for real —
    TDD covers logic, not "does the actual API key work."
-5. Log the change in `CHANGES.md`.
+5. Log the change in `CHANGE.md`.
 
 Repeat this phase per skill — it's your template for all future
 capabilities.
@@ -185,16 +185,16 @@ capabilities.
 1. Add/adjust a test that captures the desired behavior (red).
 2. Write the minimum code to pass it (green).
 3. Refactor for clarity, re-run tests.
-4. Append an entry to `CHANGES.md`.
+4. Append an entry to `CHANGE.md`.
 5. Commit.
 
 ---
 
-## `CHANGES.md` template
+## Changelog entry template
 
-Copy this into `CHANGES.md` at the repo root and add one entry per
-change, newest first. Keep entries short — link to the test file that
-pins the behavior rather than re-explaining it in prose.
+Add entries to `CHANGE.md` at the repo root, newest first. Keep entries
+short — link to the test file that pins the behavior rather than
+re-explaining it in prose.
 
 ```markdown
 # Changes
@@ -230,7 +230,7 @@ pins the behavior rather than re-explaining it in prose.
   No automated test suite yet — Phase 1 backfills this.
 ```
 
-Each future phase above should produce one `CHANGES.md` entry, e.g.:
+Each future phase above should produce one `CHANGE.md` entry, e.g.:
 
 ```markdown
 ## 2026-09-20 — Phase 1: registry tests

@@ -185,6 +185,29 @@ Open https://ollama.com/blog/tool-support and summarize it.
 Use `search_type` values `text`, `news`, `images`, or `videos` when calling the
 search tool directly.
 
+## Browser skill
+
+`skills/browser_skill.py` provides read-only web browsing, using the
+shared Chrome-over-CDP connector in `core/browser.py`:
+
+- `navigate(url)` — opens a URL in a new tab, leaves it open for you to see
+- `get_page_text(url)` — fetches a page's visible text content
+- `get_links(url)` — lists links found on a page
+- `screenshot(url)` — saves a PNG to `workspace/`
+
+These tools do not click page controls or submit forms. They are currently
+registered as non-dangerous tools; `screenshot` writes a PNG into the
+configured workspace. Interactive actions (such as clicking or filling
+forms) should be separate tools and marked `dangerous=True`.
+
+The skill is enabled by default in `config.py`. Playwright is installed with
+the project requirements. To use it, start Chrome with the
+`--remote-debugging-port=9222` flag, or set `CHROME_CDP_PORT` to your chosen
+port. Confirm the debugging endpoint is available at
+`http://localhost:9222/json/version` (replace `9222` if using another port).
+Remove `"skills.browser_skill"` from `enabled_skills` if you do not want to
+load the skill.
+
 ## Project structure
 
 ```text

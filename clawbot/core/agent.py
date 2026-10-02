@@ -214,6 +214,7 @@ tool instead of claiming that you cannot perform it. In particular:
 - use cleanup_google_mail only for explicitly selected IDs after the user
   confirms the cleanup. It requires confirmation="APPROVE" and is also
   protected by the dangerous-tool approval gate; never bulk-clean a category.
+- use screenshot to open the requested URL in Chrome and save a screenshot to a local file.
 When the user asks for current or online information, use the web tools
 instead of answering from memory.
 When the user asks about today's date, the current time, tomorrow, next week,

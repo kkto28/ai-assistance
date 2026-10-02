@@ -42,6 +42,7 @@ class Config:
     google_calendar_default_calendar: str = os.getenv(
         "GOOGLE_CALENDAR_DEFAULT_CALENDAR", "primary"
     )
+    chrome_cdp_port: int = int(os.getenv("CHROME_CDP_PORT", "9222"))
 
     # --- Google Mail ---
     google_mail_access_token: str = os.getenv("GOOGLE_MAIL_ACCESS_TOKEN", "")
@@ -60,6 +61,7 @@ class Config:
         "skills.web_search_skill",
         "skills.google_calendar_skill",
         "skills.google_mail_skill",
+        "skills.browser_skill",
     ])
 
 

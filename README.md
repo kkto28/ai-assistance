@@ -39,6 +39,27 @@ export CLAWBOT_MODEL_NAME=qwen3:8b
 export OLLAMA_HOST=http://localhost:11434
 ```
 
+## Optional local services (macOS)
+
+These commands apply only if you have configured the matching local service
+files and helpers. They are not required for a standard setup.
+
+To bootstrap a preconfigured Ollama LaunchDaemon and check that Ollama
+responds:
+
+```bash
+sudo launchctl bootstrap system /Library/LaunchDaemons/com.ollama.serve.plist
+curl http://localhost:11434
+```
+
+To start Chrome through your local `chrome-debug` helper and check its
+Chrome DevTools Protocol (CDP) endpoint:
+
+```bash
+chrome-debug
+curl http://localhost:9222/json/version
+```
+
 The launch scripts automatically source `clawbot/set_env.sh` when it exists.
 Use that file for local environment variables, but keep it out of Git and
 never share its contents.

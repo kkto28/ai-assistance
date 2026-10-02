@@ -35,6 +35,7 @@ it in prose.
 - Telegram delivery for scheduled briefings with configurable chat ID
 - Background launchers: `clawbot/run_cli.sh`, `clawbot/run_job.sh`, and
   `clawbot/run_telegram.sh`
+- Read-only browser skill for navigation, page text, links, and screenshots
 
 ### Changed
 - Root, Clawbot, and Rose README files now provide clearer setup, launcher,
@@ -91,6 +92,7 @@ it in prose.
 - Weather skill and scheduler tests: 35 passing, 2 opt-in live weather tests
   skipped by default
 - Added memory deletion and scheduled cleanup coverage
+- Browser skill behavior coverage in `tests/test_browser_skill.py` (12 tests)
 
 ---
 
