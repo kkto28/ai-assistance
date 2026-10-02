@@ -1,15 +1,13 @@
 # Clawbot
 
-Clawbot is Rose's Python agent runtime. It combines:
+Clawbot is Rose's Python agent runtime. It combines a tool-calling reasoning
+loop, pluggable skills registered with `@tool`, CLI and service channels, and
+local SQLite conversation history and notes.
 
-- one tool-calling reasoning loop;
-- pluggable skills registered with `@tool`;
-- CLI, Telegram, scheduler, and Rose channels;
-- local SQLite conversation history and notes.
+## Setup
 
-## Quickstart
-
-From the repository root:
+From the repository root, create and activate a virtual environment and install
+the requirements:
 
 ```bash
 python3 -m venv venv
@@ -17,7 +15,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Set a model provider:
+Choose a model provider:
 
 ```bash
 # OpenAI
@@ -33,18 +31,14 @@ export CLAWBOT_MODEL_NAME=qwen3:8b
 export OLLAMA_HOST=http://localhost:11434
 ```
 
-Start a terminal session:
-
-```bash
-./clawbot/run_cli.sh
-```
-
-The launcher uses the repository virtual environment when available and
-automatically sources `clawbot/set_env.sh` if present.
+The launch scripts use the repository virtual environment when available and
+automatically source `clawbot/set_env.sh` if present. That file is ignored by
+Git and should contain local environment variables and secrets only; never
+commit or share its contents.
 
 ## Launchers
 
-Run these from the repository root:
+Run these commands from the repository root:
 
 | Launcher | Purpose | Logs / state |
 | --- | --- | --- |
@@ -54,7 +48,7 @@ Run these from the repository root:
 | `./Rose/run_rose.sh` | Browser UI backend | Port `8765` |
 | `./Rose/run_rose_app.sh` | Native macOS UI | Port `8765` |
 
-Stop a background job with its PID file:
+Stop a background job using its PID file:
 
 ```bash
 kill "$(cat scheduler.pid)"
@@ -67,13 +61,9 @@ Use the equivalent `telegram.pid` file for the Telegram bot. Stop Rose with:
 kill "$(lsof -tiTCP:8765 -sTCP:LISTEN)"
 ```
 
-## Environment variables
+## Configuration
 
-The launchers source `clawbot/set_env.sh` automatically. This file is ignored
-by Git and should contain local secrets only. Do not commit or paste its
-contents.
-
-Common settings:
+Common environment variables:
 
 | Variable | Purpose |
 | --- | --- |
@@ -86,8 +76,9 @@ Common settings:
 | `CLAWBOT_WORKSPACE` | Root directory used by file tools |
 | `CLAWBOT_DB_PATH` | SQLite database path |
 
-Configuration is loaded when the process starts. Restart the relevant launcher
-after changing environment variables.
+Configuration is loaded when a process starts. Restart the relevant launcher
+after changing environment variables. Keep `CLAWBOT_AUTO_APPROVE=false` unless
+you fully understand the risks.
 
 ## Google Calendar
 
@@ -106,6 +97,9 @@ The refresh token is preferred because it can obtain new access tokens
 automatically. `GOOGLE_CALENDAR_ACCESS_TOKEN` is available for short-lived
 testing. Event times default to `Europe/London`.
 
+For common authentication, permission, and date/time problems, see the
+[Google Calendar troubleshooting guide](../documents/troubleshooting/google-calendar.md).
+
 Example requests:
 
 ```text
@@ -122,6 +116,7 @@ anything. Inspection returns up to 20 messages per category by default,
 grouped with sender, date, subject, and exact Message ID fields so candidates
 are easy to review. Cleanup moves only selected messages to recoverable Gmail
 Trash.
+
 Configure OAuth with the Gmail scope
 `https://www.googleapis.com/auth/gmail.modify`:
 
@@ -135,10 +130,10 @@ export GOOGLE_MAIL_REFRESH_TOKEN=your-refresh-token
 inspect mail first. Inspection is read-only and does not require approval.
 Cleanup requires:
 
-1. a review of the messages and their exact IDs;
-2. explicit selection of the IDs to move;
-3. the normal dangerous-tool approval; and
-4. the literal confirmation `APPROVE`.
+1. Review of the messages and their exact IDs.
+2. Explicit selection of the IDs to move.
+3. The normal dangerous-tool approval.
+4. The literal confirmation `APPROVE`.
 
 Messages are moved to Trash, not permanently deleted.
 
@@ -193,18 +188,18 @@ search tool directly.
 
 ## Browser skill
 
-`skills/browser_skill.py` provides read-only web browsing, using the
-shared Chrome-over-CDP connector in `core/browser.py`:
+`skills/browser_skill.py` provides read-only web browsing, using the shared
+Chrome-over-CDP connector in `core/browser.py`:
 
-- `navigate(url)` — opens a URL in a new tab, leaves it open for you to see
-- `get_page_text(url)` — fetches a page's visible text content
-- `get_links(url)` — lists links found on a page
-- `screenshot(url)` — saves a PNG to `workspace/`
+- `navigate(url)` — opens a URL in a new tab, leaving it open for you to see.
+- `get_page_text(url)` — fetches a page's visible text content.
+- `get_links(url)` — lists links found on a page.
+- `screenshot(url)` — saves a PNG to `workspace/`.
 
-These tools do not click page controls or submit forms. They are currently
-registered as non-dangerous tools; `screenshot` writes a PNG into the
-configured workspace. Interactive actions (such as clicking or filling
-forms) should be separate tools and marked `dangerous=True`.
+These tools do not click page controls or submit forms. They are registered as
+non-dangerous tools; `screenshot` writes a PNG into the configured workspace.
+Interactive actions, such as clicking or filling forms, should be separate
+tools and marked `dangerous=True`.
 
 The skill is enabled by default in `config.py`. Playwright is installed with
 the project requirements. To use it, start Chrome with the
@@ -213,6 +208,27 @@ port. Confirm the debugging endpoint is available at
 `http://localhost:9222/json/version` (replace `9222` if using another port).
 Remove `"skills.browser_skill"` from `enabled_skills` if you do not want to
 load the skill.
+
+## Optional local services (macOS)
+
+These commands apply only if you have configured the matching local service
+files and helpers. They are not required for a standard setup.
+
+To bootstrap a preconfigured Ollama LaunchDaemon and check that Ollama
+responds:
+
+```bash
+sudo launchctl bootstrap system /Library/LaunchDaemons/com.ollama.serve.plist
+curl http://localhost:11434
+```
+
+To start Chrome through your local `chrome-debug` helper and check its Chrome
+DevTools Protocol (CDP) endpoint:
+
+```bash
+chrome-debug
+curl http://localhost:9222/json/version
+```
 
 ## Project structure
 
@@ -235,6 +251,6 @@ adapter.
 ## Security
 
 Clawbot can run shell commands, write files, access Google services, and send
-Telegram messages. Keep approval mode enabled until the setup is trusted.
-Use a workspace directory that can safely be modified, rotate credentials if
+Telegram messages. Keep approval mode enabled until the setup is trusted. Use
+a workspace directory that can safely be modified, rotate credentials if
 they are exposed, and never commit `set_env.sh`.

@@ -1,9 +1,11 @@
 # Rose / Clawbot
 
-Rose is a personal AI assistant with a Python backend, a lightweight skill
-system, local SQLite memory, and an optional macOS desktop interface.
+Rose is a personal AI assistant powered by Clawbot, a Python agent runtime
+with a pluggable skill system and local SQLite memory.
 
 ## Choose how to run it
+
+Run commands from the repository root:
 
 | Use case | Command |
 | --- | --- |
@@ -13,69 +15,6 @@ system, local SQLite memory, and an optional macOS desktop interface.
 | Scheduled briefing | `./clawbot/run_job.sh` |
 | Telegram bot | `./clawbot/run_telegram.sh` |
 
-Run commands from the repository root.
-
-## First-time setup
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-Choose a model provider:
-
-```bash
-# OpenAI
-export CLAWBOT_MODEL_PROVIDER=openai
-export OPENAI_API_KEY=your-key
-
-# Or Ollama
-brew install ollama
-brew services start ollama
-ollama pull qwen3:8b
-export CLAWBOT_MODEL_PROVIDER=ollama
-export CLAWBOT_MODEL_NAME=qwen3:8b
-export OLLAMA_HOST=http://localhost:11434
-```
-
-## Optional local services (macOS)
-
-These commands apply only if you have configured the matching local service
-files and helpers. They are not required for a standard setup.
-
-To bootstrap a preconfigured Ollama LaunchDaemon and check that Ollama
-responds:
-
-```bash
-sudo launchctl bootstrap system /Library/LaunchDaemons/com.ollama.serve.plist
-curl http://localhost:11434
-```
-
-To start Chrome through your local `chrome-debug` helper and check its
-Chrome DevTools Protocol (CDP) endpoint:
-
-```bash
-chrome-debug
-curl http://localhost:9222/json/version
-```
-
-The launch scripts automatically source `clawbot/set_env.sh` when it exists.
-Use that file for local environment variables, but keep it out of Git and
-never share its contents.
-
-## Safety
-
-Rose asks for approval before dangerous tools such as shell commands, file
-writes, and Gmail cleanup. Gmail inspection and calendar listing are
-read-only. Gmail cleanup moves only explicitly selected messages to Trash and
-requires a separate `APPROVE` confirmation.
-
-Keep `CLAWBOT_AUTO_APPROVE=false` unless you fully understand the risks.
-
-## Documentation
-
-- [Clawbot guide](clawbot/README.md) — setup, skills, channels, Google
-  Calendar/Mail, scheduler, and security details
-- [Rose guide](Rose/README.md) — browser and native macOS UI
-- [Change log](CHANGE.md)
+See the [Clawbot guide](clawbot/README.md) for setup, configuration, skills,
+channels, integrations, and security. For details about the interfaces, see
+the [Rose guide](Rose/README.md). See the [change log](CHANGE.md) for updates.

@@ -12,6 +12,8 @@ it in prose.
 - `4010669` (`feat(weather): add BBC weather location tools`)
 
 ### Added
+- Google Calendar troubleshooting guide with ordered OAuth token checks,
+  refresh-token recovery steps, and links to Google documentation
 - Google Mail skill for read-only Spam, Promotions, and Social review plus
   explicit-ID, approval-gated moves to recoverable Trash
 - Google Calendar skill with OAuth authentication, event listing, creation,
@@ -39,6 +41,8 @@ it in prose.
 - Wednesday bin collection reminder with optional Telegram screenshot delivery
 
 ### Changed
+- Root README now focuses on the project description and run modes, with
+  detailed Clawbot setup and integration guidance in `clawbot/README.md`
 - Root, Clawbot, and Rose README files now provide clearer setup, launcher,
   configuration, integration, safety, and architecture guidance
 - Rose and Clawbot launchers now source the local environment file before
