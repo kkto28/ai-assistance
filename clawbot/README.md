@@ -144,8 +144,8 @@ Messages are moved to Trash, not permanently deleted.
 
 ## Scheduler and Telegram
 
-The default `morning_briefing` job runs daily at 09:00 in the machine's local
-timezone:
+The scheduler runs the morning briefing daily at 09:00 and clears conversation
+history daily at 01:00, both in `Europe/London` time:
 
 ```bash
 ./clawbot/run_job.sh
@@ -158,6 +158,12 @@ export TELEGRAM_BOT_TOKEN=your-bot-token
 export TELEGRAM_CHAT_ID=your-chat-id
 ./clawbot/run_telegram.sh
 ```
+
+The scheduled bin collection reminder runs Wednesdays at 08:30 London time.
+Set `CLAWBOT_BIN_COLLECTION_URL` to the calendar URL in `clawbot/set_env.sh`,
+and configure Playwright and Chrome remote debugging as described in the
+Browser skill section. When Telegram credentials are configured, the reminder
+sends its screenshot to `TELEGRAM_CHAT_ID`.
 
 The scheduler can also run interval jobs from Python:
 

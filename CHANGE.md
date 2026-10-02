@@ -36,6 +36,7 @@ it in prose.
 - Background launchers: `clawbot/run_cli.sh`, `clawbot/run_job.sh`, and
   `clawbot/run_telegram.sh`
 - Read-only browser skill for navigation, page text, links, and screenshots
+- Wednesday bin collection reminder with optional Telegram screenshot delivery
 
 ### Changed
 - Root, Clawbot, and Rose README files now provide clearer setup, launcher,
@@ -65,9 +66,11 @@ it in prose.
 - Memory APIs now support deleting a single channel or all conversation
   history, and the scheduler clears all history daily at 01:00
 - Morning briefings now run daily at 09:00
+- Morning briefings now focus on Glasgow weather
 - The commit-message skill now requires updating and verifying `CHANGE.md`
   before creating commits
 - Git now ignores untracked `run_*.sh` launcher scripts
+- Scheduler cron jobs now use `Europe/London` explicitly
 
 ### Fixed
 - Google Calendar and Mail API requests now send the loaded OAuth bearer token
@@ -93,6 +96,7 @@ it in prose.
   skipped by default
 - Added memory deletion and scheduled cleanup coverage
 - Browser skill behavior coverage in `tests/test_browser_skill.py` (12 tests)
+- Scheduler screenshot and timing coverage in `tests/test_scheduler_jobs.py`
 
 ---
 

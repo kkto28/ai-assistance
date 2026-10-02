@@ -43,6 +43,7 @@ class Config:
         "GOOGLE_CALENDAR_DEFAULT_CALENDAR", "primary"
     )
     chrome_cdp_port: int = int(os.getenv("CHROME_CDP_PORT", "9222"))
+    bin_collection_url: str = os.getenv("CLAWBOT_BIN_COLLECTION_URL", "")
 
     # --- Google Mail ---
     google_mail_access_token: str = os.getenv("GOOGLE_MAIL_ACCESS_TOKEN", "")
