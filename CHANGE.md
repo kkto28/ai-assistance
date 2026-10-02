@@ -12,6 +12,8 @@ it in prose.
 - `4010669` (`feat(weather): add BBC weather location tools`)
 
 ### Added
+- Minimal personal-use landing page describing the assistant's private use and
+  data handling
 - Google Calendar troubleshooting guide with ordered OAuth token checks,
   refresh-token recovery steps, and links to Google documentation
 - Google Mail skill for read-only Spam, Promotions, and Social review plus
